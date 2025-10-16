@@ -15,6 +15,8 @@ import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.subsystems.drivetrain.DrivetrainController;
 
 public class RobotContainer {
+  // TODO: This should be set to the robot's actual max speeds and then we should set the controller's
+  // response curves.
   private static final double MAX_SPEED_METERS_PER_SEC = 8.0;
   private static final double MAX_ANGULAR_RAD_PER_SEC = 3*Math.PI;
 
@@ -27,6 +29,14 @@ public class RobotContainer {
 
   public RobotContainer() {
     configureBindings();
+  }
+
+  public void setSwerveModulesToEncoders() {
+    this.drivetrain.setModulesToEncoders();
+  }
+
+  public void zeroGyro() {
+    this.poseEstimator.zeroGyro();
   }
 
   private void configureBindings() {

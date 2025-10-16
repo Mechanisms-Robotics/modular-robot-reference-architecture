@@ -10,7 +10,7 @@ public class PoseEstimator8736 {
         gyro.setYaw(0.0);
     }
 
-    // TODO: Think about this because it may be better as a Pose2D or whatever....
+    // TODO: Think about this because it may be better to return a Pose2D or whatever....
     public double getYaw() {
         return gyro.getYaw();
     }
