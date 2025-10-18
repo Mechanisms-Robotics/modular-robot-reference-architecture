@@ -4,77 +4,122 @@
 
 package frc.robot;
 
+import static frc.robot.CONSTANTS.*;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
+import frc.robot.PoseEstimator8736;
+import frc.robot.subsystems.drivetrain.CTREModule;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.subsystems.drivetrain.DrivetrainController;
-import static frc.robot.CONSTANTS.*;
+import frc.robot.subsystems.drivetrain.SimModule;
 
 public class RobotContainer {
 
-  private final Drivetrain drivetrain = new Drivetrain();
-  private final PoseEstimator8736 poseEstimator = new PoseEstimator8736();
-  private final DrivetrainController drivetrainController = new DrivetrainController(poseEstimator);
+    private final Drivetrain drivetrain;
+    private final PoseEstimator8736 poseEstimator = new PoseEstimator8736();
+    private final DrivetrainController drivetrainController =
+        new DrivetrainController(poseEstimator);
 
-  private final CommandPS4Controller controller = new CommandPS4Controller(CONTROLLER_PORT);
+    private final CommandPS4Controller controller = new CommandPS4Controller(
+        CONTROLLER_PORT
+    );
 
-  public RobotContainer() {
-    // TODO: Think about where to initialize all of this properly
-    this.poseEstimator.initialize(new Pose2d(), this.drivetrain);
-    this.drivetrain.setPoseEstimator(this.poseEstimator);
-    configureBindings();
-  }
+    public RobotContainer() {
+        // Not entriely happy with how this looks. But I do like passing in the IO
+        // as this makes it easy to change hardware without chaning logic.
+        if (RobotBase.isReal()) {
+            this.drivetrain = new Drivetrain(
+                new CTREModule(
+                    FRONT_LEFT_STEERING_CAN_ID,
+                    FRONT_LEFT_DRIVE_CAN_ID,
+                    FRONT_LEFT_ENCODER_CAN_ID
+                ),
+                new CTREModule(
+                    FRONT_RIGHT_STEERING_CAN_ID,
+                    FRONT_RIGHT_DRIVE_CAN_ID,
+                    FRONT_RIGHT_ENCODER_CAN_ID
+                ),
+                new CTREModule(
+                    BACK_LEFT_STEERING_CAN_ID,
+                    BACK_LEFT_DRIVE_CAN_ID,
+                    BACK_LEFT_ENCODER_CAN_ID
+                ),
+                new CTREModule(
+                    BACK_RIGHT_STEERING_CAN_ID,
+                    BACK_RIGHT_DRIVE_CAN_ID,
+                    BACK_RIGHT_ENCODER_CAN_ID
+                )
+            );
+        } else {
+            this.drivetrain = new Drivetrain(
+                new SimModule(),
+                new SimModule(),
+                new SimModule(),
+                new SimModule()
+            );
+        }
+        this.poseEstimator.initialize(new Pose2d(), this.drivetrain);
+        this.drivetrain.setPoseEstimator(this.poseEstimator);
+        configureBindings();
+    }
 
-  public void setSwerveModulesToEncoders() {
-    this.drivetrain.setModulesToEncoders();
-  }
+    public void setSwerveModulesToEncoders() {
+        this.drivetrain.setModulesToEncoders();
+    }
 
-  public void zeroGyro() {
-    this.poseEstimator.zeroGyro();
-  }
-
-  private void configureBindings() {
-    controller.cross().onTrue(new InstantCommand(
-      () -> {
+    public void zeroGyro() {
         this.poseEstimator.zeroGyro();
-      }
-    ));
+    }
 
-    drivetrain.setDefaultCommand(
-      new RunCommand(
-          () -> {
-              double forward = -this.controller.getLeftY(); // Negative to match FRC convention
-              double strafe = -this.controller.getLeftX();
-              double rotation = -this.controller.getRightX();
+    public void initializePoseEstimator() {
+        this.poseEstimator.initialize(new Pose2d(), this.drivetrain);
+    }
 
-              // apply deadbands and scaling
+    private void configureBindings() {
+        controller
+            .cross()
+            .onTrue(
+                new InstantCommand(() -> {
+                    this.poseEstimator.zeroGyro();
+                })
+            );
 
-              forward = Math.abs(forward) > DEADBAND ? forward : 0.0;
-              strafe = Math.abs(strafe) > DEADBAND ? strafe : 0.0;
-              rotation = Math.abs(rotation) > DEADBAND ? rotation : 0.0;
+        drivetrain.setDefaultCommand(
+            new RunCommand(
+                () -> {
+                    double forward = -this.controller.getLeftY(); // Negative to match FRC convention
+                    double strafe = -this.controller.getLeftX();
+                    double rotation = -this.controller.getRightX();
 
-              ChassisSpeeds speeds = new ChassisSpeeds(
-                  forward*forward*forward*MAX_SPEED_METERS_PER_SEC,
-                  strafe*strafe*strafe* MAX_SPEED_METERS_PER_SEC,
-                  rotation*rotation*rotation*MAX_ANGULAR_RAD_PER_SEC
-              );
+                    // apply deadbands and scaling
+                    forward = Math.abs(forward) > DEADBAND ? forward : 0.0;
+                    strafe = Math.abs(strafe) > DEADBAND ? strafe : 0.0;
+                    rotation = Math.abs(rotation) > DEADBAND ? rotation : 0.0;
 
-              // convert to robot-oriented coordinates and pass to swerve subsystem
-              ChassisSpeeds robotOriented = drivetrainController.fieldToRobotChassisSpeeds(speeds);
-              drivetrain.setDesiredState(robotOriented);
-          },
-          drivetrain
-      )
-  );
+                    ChassisSpeeds speeds = new ChassisSpeeds(
+                        forward * forward * forward * MAX_SPEED_METERS_PER_SEC,
+                        strafe * strafe * strafe * MAX_SPEED_METERS_PER_SEC,
+                        rotation * rotation * rotation * MAX_ANGULAR_RAD_PER_SEC
+                    );
+
+                    // convert to robot-oriented coordinates and pass to swerve subsystem
+                    ChassisSpeeds robotOriented =
+                        drivetrainController.fieldToRobotChassisSpeeds(speeds);
+                    drivetrain.setDesiredState(robotOriented);
+                },
+                drivetrain
+            )
+        );
+    }
+
+    public Command getAutonomousCommand() {
+        return Commands.print("No autonomous command configured");
+    }
 }
-
-  public Command getAutonomousCommand() {
-    return Commands.print("No autonomous command configured");
-  }
-}
-

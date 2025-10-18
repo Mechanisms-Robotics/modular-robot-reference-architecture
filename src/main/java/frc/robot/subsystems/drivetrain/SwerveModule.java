@@ -1,107 +1,65 @@
 package frc.robot.subsystems.drivetrain;
 
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.ControlRequest;
-import com.ctre.phoenix6.controls.PositionDutyCycle;
-import com.ctre.phoenix6.controls.VelocityDutyCycle;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.reduxrobotics.sensors.canandmag.Canandmag;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import static frc.robot.CONSTANTS.*;
 
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
+import org.littletonrobotics.junction.Logger;
+
 public class SwerveModule {
-    private static final boolean OUTPUT_TO_SMART_DASH = true;
 
-    private final int steeringMotorCANId;
+    private final SwerveModuleIO io;
+    private final ModuleIOInputsAutoLogged inputs =
+        new ModuleIOInputsAutoLogged();
+    private final String name;
 
-    private final TalonFX steeringMotor;
-    private final TalonFX driveMotor;
+    public SwerveModule(SwerveModuleIO io, String name) {
+        this.io = io;
+        this.name = name;
+    }
 
-    private final Canandmag encoder;
-  
-    public SwerveModule(int steeringMotorCANId, int driveMotorCANId, int encoderCANId) {
-        this.steeringMotorCANId = steeringMotorCANId;
-
-        this.steeringMotor = new TalonFX(steeringMotorCANId);
-        this.driveMotor = new TalonFX(driveMotorCANId);
-        this.encoder = new Canandmag(encoderCANId);
-
-        var steeringConfigs = new TalonFXConfiguration();
-        steeringConfigs.Slot0.kP = 0.16;
-        steeringConfigs.Slot0.kI = 0.0;
-        steeringConfigs.Slot0.kD = 0.0;
-        steeringConfigs.Slot0.kV = 0.0; // feedforward term
-
-        //experimenting with motion magic to smooth steering
-       /*  var motionMagicConfigs = steeringConfigs.MotionMagic; 
-        motionMagicConfigs.MotionMagicCruiseVelocity = 500; //Target cruise velocity of 500rps
-        motionMagicConfigs.MotionMagicAcceleration = 1000; //Target acceleration of 1000rps/s (0.5 sec)
-        motionMagicConfigs.MotionMagicJerk = 0; //Target jerk of 0 rps/s/s (0 sec)  */
-
-        this.steeringMotor.getConfigurator().apply(steeringConfigs);
-
-        var driveConfigs = new TalonFXConfiguration();
-        driveConfigs.Slot0.kP = 0.02;
-        driveConfigs.Slot0.kI = 0.0;
-        driveConfigs.Slot0.kD = 0.0;
-        driveConfigs.Slot0.kV = 0.0; // feedforward term
-        this.driveMotor.getConfigurator().apply(driveConfigs);
+    public void periodic() {
+        io.updateInputs(inputs);
+        Logger.processInputs("Drive/" + name, inputs);
     }
 
     public void setModuleToEncoder() {
-        // set the internal encoder based on the absolution position of the external encoder
-        double encPosition = this.encoder.getAbsPosition(); // 0.0 to 1.0, inclusive, increasing counterclockwise
-        this.steeringMotor.setPosition(STEERING_GEAR_RATIO*encPosition);
-
-        // set the steering motor to the current position so it doesn't try to move
-        double positionInRotations = STEERING_GEAR_RATIO*encPosition;
-        ControlRequest steeringControlRequest = new PositionDutyCycle(positionInRotations);
-        this.steeringMotor.setControl(steeringControlRequest);
-    }
-
-    public SwerveModulePosition getModulePosition() {
-        double positionOfSteeringRad = 2*Math.PI*this.steeringMotor.getPosition().getValueAsDouble() / STEERING_GEAR_RATIO;
-        double wheelRotations = this.driveMotor.getPosition().getValueAsDouble();
-        return new SwerveModulePosition(
-            wheelRotations / EFFECTIVE_GEAR_RATIO, new Rotation2d(-positionOfSteeringRad));
+        this.io.calibrate();
     }
 
     public void setModuleState(SwerveModuleState state) {
-        // get the current position of the steering motor and optimize the state
-        SwerveModulePosition currentPosition = getModulePosition();
-        state.optimize(currentPosition.angle);
+        // Optimize the state to avoid spinning more than 90 degrees
+        state = SwerveModuleState.optimize(state, inputs.data.turnPosition());
 
-        // set the position of the steering motor
-        // remember that angle is the negative of what the motors want, hence the minus
-        double positionInRotations = -STEERING_GEAR_RATIO*state.angle.getDegrees()/360.0;
-        ControlRequest steeringControlRequest = new PositionDutyCycle(positionInRotations);
-        this.steeringMotor.setControl(steeringControlRequest);
+        // Set the turn motor to the desired angle
+        io.runTurnPosition(state.angle);
 
-        // calculate a speed scale factor (cosine compensation)
-        double scaleFactor = state.angle.minus(currentPosition.angle).getCos();
-        
-        // set the speed of the drive motor
-        ControlRequest driveControlRequest = new VelocityDutyCycle(
-            EFFECTIVE_GEAR_RATIO*state.speedMetersPerSecond*scaleFactor);
-        this.driveMotor.setControl(driveControlRequest);
+        // Calculate a speed scale factor (cosine compensation)
+        double scaleFactor = state.angle
+            .minus(inputs.data.turnPosition())
+            .getCos();
 
-        // this is probably not the best place for this code, but this is a sandbox project
+        // Convert speed from m/s to rad/s and apply scale factor
+        double wheelRadPerSec =
+            state.speedMetersPerSecond / WHEEL_RADIUS_METERS;
+        io.runDriveVelocity(wheelRadPerSec * scaleFactor, 0.0);
+    }
 
-        // if (OUTPUT_TO_SMART_DASH) {
-        //     SmartDashboard.putNumber(
-        //         "Swerve States/" + this.steeringMotorCANId + "/Drive/demand_wheelRotationsPerSecond", wheelRotationsPerSecond);
-            
-        //     SmartDashboard.putNumber(
-        //         "Swerve States/" + this.steeringMotorCANId + "/Steering/demand_positionInRotations", positionInRotations);
-        //     SmartDashboard.putNumber(
-        //         "Swerve States/" + this.steeringMotorCANId + "/Steering/actual_positionOfSteering", positionOfSteeringRad);
+    public SwerveModulePosition getModulePosition() {
+        return new SwerveModulePosition(
+            inputs.data.drivePositionRad() * WHEEL_RADIUS_METERS,
+            inputs.data.turnPosition()
+        );
+    }
 
-        //     double encPosition = encoder.getAbsPosition(); // 0.0 to 1.0, inclusive, increasing counterclockwise
-        //     SmartDashboard.putNumber(
-        //         "Swerve States/" + this.steeringMotorCANId + "/external_encoderPosition", encPosition);        
-        // }
+    public SwerveModuleState getState() {
+        return new SwerveModuleState(
+            inputs.data.driveVelocityRadPerSec() * WHEEL_RADIUS_METERS,
+            inputs.data.turnPosition()
+        );
+    }
+
+    public double getPositionMeters() {
+        return (inputs.data.drivePositionRad() * WHEEL_RADIUS_METERS);
     }
 }

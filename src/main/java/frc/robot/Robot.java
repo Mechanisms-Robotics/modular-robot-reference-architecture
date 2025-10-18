@@ -4,85 +4,108 @@
 
 package frc.robot;
 
-import java.time.Duration;
-import java.time.Instant;
-
-import edu.wpi.first.wpilibj.TimedRobot;
+import com.ctre.phoenix6.SignalLogger;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import static frc.robot.CONSTANTS.*;
+import java.time.Duration;
+import java.time.Instant;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.rlog.RLOGServer;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
-public class Robot extends TimedRobot {
-  public Instant lastSwerveModuleSetTime = Instant.MIN;
+public class Robot extends LoggedRobot {
 
-  private Command autonomousCommand;
-  private final RobotContainer robotContainer;
+    private static final long SWERVE_ENDOCER_SET_FREQUECY_SECONDS = 1;
+    public Instant lastSwerveModuleSetTime = Instant.MIN;
 
-  public Robot() {
-    this.robotContainer = new RobotContainer();
-  }
+    private Command autonomousCommand;
+    private final RobotContainer robotContainer;
 
-  @Override
-  public void robotPeriodic() {
-    CommandScheduler.getInstance().run();
-  }
+    public Robot() {
+        Logger.recordMetadata("ProjectName", "8736Framework"); // Set a metadata value
 
-  @Override
-  public void disabledInit() {}
+        if (RobotBase.isReal()) {
+            Logger.addDataReceiver(new WPILOGWriter()); // Publish data to NetworkTables
+            Logger.addDataReceiver(new RLOGServer());
+        } else {
+            Logger.addDataReceiver(new RLOGServer());
+        }
 
-  @Override
-  public void disabledPeriodic() {
-    // set the swerve modules to the external encoders periodically
-    Instant now = Instant.now();
-    Duration duration = Duration.between(this.lastSwerveModuleSetTime, now);
-    if (duration.compareTo(Duration.ofSeconds(SWERVE_ENCODER_SET_FREQUECY_SECONDS)) >= 0) {
-      this.robotContainer.setSwerveModulesToEncoders();
-      this.lastSwerveModuleSetTime = now;
+        Logger.start();
+        SignalLogger.enableAutoLogging(false);
+
+        this.robotContainer = new RobotContainer();
     }
-  }
 
-  @Override
-  public void disabledExit() {
-    // Zero the gyro when we enable. We will probably have to start setting this
-    // differently at the start of autos. This clearly will have to change.
-    this.robotContainer.zeroGyro();
-  }
-
-  @Override
-  public void autonomousInit() {
-    this.autonomousCommand = this.robotContainer.getAutonomousCommand();
-    if (this.autonomousCommand != null) {
-      this.autonomousCommand.schedule();
+    @Override
+    public void robotPeriodic() {
+        CommandScheduler.getInstance().run();
     }
-  }
 
-  @Override
-  public void autonomousPeriodic() {}
+    @Override
+    public void disabledInit() {}
 
-  @Override
-  public void autonomousExit() {}
-
-  @Override
-  public void teleopInit() {
-    if (this.autonomousCommand != null) {
-      this.autonomousCommand.cancel();
+    @Override
+    public void disabledPeriodic() {
+        // set the swerve modules to the external encoders periodically
+        Instant now = Instant.now();
+        Duration duration = Duration.between(this.lastSwerveModuleSetTime, now);
+        if (
+            duration.compareTo(
+                Duration.ofSeconds(SWERVE_ENDOCER_SET_FREQUECY_SECONDS)
+            ) >=
+            0
+        ) {
+            this.robotContainer.setSwerveModulesToEncoders();
+            this.lastSwerveModuleSetTime = now;
+        }
     }
-  }
 
-  @Override
-  public void teleopPeriodic() {}
+    @Override
+    public void disabledExit() {
+        // Initialize the pose estimator when we enable. This ensures the drivetrain
+        // encoders have been set before we initialize. We will probably have to start
+        // setting this differently at the start of autos.
+        this.robotContainer.initializePoseEstimator();
+    }
 
-  @Override
-  public void teleopExit() {}
+    @Override
+    public void autonomousInit() {
+        this.autonomousCommand = this.robotContainer.getAutonomousCommand();
+        if (this.autonomousCommand != null) {
+            this.autonomousCommand.schedule();
+        }
+    }
 
-  @Override
-  public void testInit() {
-    CommandScheduler.getInstance().cancelAll();
-  }
+    @Override
+    public void autonomousPeriodic() {}
 
-  @Override
-  public void testPeriodic() {}
+    @Override
+    public void autonomousExit() {}
 
-  @Override
-  public void testExit() {}
+    @Override
+    public void teleopInit() {
+        if (this.autonomousCommand != null) {
+            this.autonomousCommand.cancel();
+        }
+    }
+
+    @Override
+    public void teleopPeriodic() {}
+
+    @Override
+    public void teleopExit() {}
+
+    @Override
+    public void testInit() {
+        CommandScheduler.getInstance().cancelAll();
+    }
+
+    @Override
+    public void testPeriodic() {}
+
+    @Override
+    public void testExit() {}
 }
