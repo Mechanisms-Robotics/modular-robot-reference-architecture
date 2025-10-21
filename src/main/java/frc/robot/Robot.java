@@ -12,7 +12,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 public class Robot extends TimedRobot {
-  private final static long SWERVE_ENDOCER_SET_FREQUECY_SECONDS = 1;
+  private final static long SWERVE_ENCODER_SET_FREQUECY_SECONDS = 1;
   public Instant lastSwerveModuleSetTime = Instant.MIN;
 
   private Command autonomousCommand;
@@ -35,7 +35,7 @@ public class Robot extends TimedRobot {
     // set the swerve modules to the external encoders periodically
     Instant now = Instant.now();
     Duration duration = Duration.between(this.lastSwerveModuleSetTime, now);
-    if (duration.compareTo(Duration.ofSeconds(SWERVE_ENDOCER_SET_FREQUECY_SECONDS)) >= 0) {
+    if (duration.compareTo(Duration.ofSeconds(SWERVE_ENCODER_SET_FREQUECY_SECONDS)) >= 0) {
       this.robotContainer.setSwerveModulesToEncoders();
       this.lastSwerveModuleSetTime = now;
     }
@@ -44,7 +44,7 @@ public class Robot extends TimedRobot {
   @Override
   public void disabledExit() {
     // Zero the gyro when we enable. We will probably have to start setting this
-    // differently at the start of autos.
+    // differently at the start of autos. This clearly will have to change.
     this.robotContainer.zeroGyro();
   }
 

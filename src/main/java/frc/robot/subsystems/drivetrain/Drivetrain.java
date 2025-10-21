@@ -83,19 +83,20 @@ public class Drivetrain extends SubsystemBase {
 
   @Override
   public void periodic() {
-    SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(desiredChassisSpeeds);
+    SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
+      this.desiredChassisSpeeds);
 
     SwerveModuleState frontLeftState = moduleStates[0];
     SwerveModuleState frontRightState = moduleStates[1];
     SwerveModuleState backLeftState = moduleStates[2];
     SwerveModuleState backRightState = moduleStates[3];
 
-    publisher.set(new SwerveModuleState[] {
-        frontLeftState,
-        frontRightState,
-        backLeftState,
-        backRightState
-    });
+    // publisher.set(new SwerveModuleState[] {
+    //     frontLeftState,
+    //     frontRightState,
+    //     backLeftState,
+    //     backRightState
+    // });
 
     this.frontLeftModule.setModuleState(frontLeftState);
     this.frontRightModule.setModuleState(frontRightState);

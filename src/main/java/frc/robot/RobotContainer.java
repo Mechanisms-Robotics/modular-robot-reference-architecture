@@ -16,9 +16,11 @@ import frc.robot.subsystems.drivetrain.DrivetrainController;
 
 public class RobotContainer {
   // TODO: This should be set to the robot's actual max speeds and then we should set the controller's
-  // response curves.
-  private static final double MAX_SPEED_METERS_PER_SEC = 8.0;
+  // response curves. Determine these experimentally.
+
+  private static final double MAX_SPEED_METERS_PER_SEC = 5.0;
   private static final double MAX_ANGULAR_RAD_PER_SEC = 3*Math.PI;
+  private static final double DEADBAND = 0.08;
 
   private final Drivetrain drivetrain = new Drivetrain();
   private final PoseEstimator8736 poseEstimator = new PoseEstimator8736();
@@ -55,7 +57,6 @@ public class RobotContainer {
 
               // apply deadbands and scaling
 
-              final double DEADBAND = 0.04;
               forward = Math.abs(forward) > DEADBAND ? forward : 0.0;
               strafe = Math.abs(strafe) > DEADBAND ? strafe : 0.0;
               rotation = Math.abs(rotation) > DEADBAND ? rotation : 0.0;

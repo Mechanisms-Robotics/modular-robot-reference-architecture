@@ -89,18 +89,18 @@ public class SwerveModule {
 
         // this is probably not the best place for this code, but this is a sandbox project
 
-        if (OUTPUT_TO_SMART_DASH) {
-            SmartDashboard.putNumber(
-                "Swerve States/" + this.steeringMotorCANId + "/Drive/demand_wheelRotationsPerSecond", wheelRotationsPerSecond);
+        // if (OUTPUT_TO_SMART_DASH) {
+        //     SmartDashboard.putNumber(
+        //         "Swerve States/" + this.steeringMotorCANId + "/Drive/demand_wheelRotationsPerSecond", wheelRotationsPerSecond);
             
-            SmartDashboard.putNumber(
-                "Swerve States/" + this.steeringMotorCANId + "/Steering/demand_positionInRotations", positionInRotations);
-            SmartDashboard.putNumber(
-                "Swerve States/" + this.steeringMotorCANId + "/Steering/actual_positionOfSteering", positionOfSteeringRad);
+        //     SmartDashboard.putNumber(
+        //         "Swerve States/" + this.steeringMotorCANId + "/Steering/demand_positionInRotations", positionInRotations);
+        //     SmartDashboard.putNumber(
+        //         "Swerve States/" + this.steeringMotorCANId + "/Steering/actual_positionOfSteering", positionOfSteeringRad);
 
-            double encPosition = encoder.getAbsPosition(); // 0.0 to 1.0, inclusive, increasing counterclockwise
-            SmartDashboard.putNumber(
-                "Swerve States/" + this.steeringMotorCANId + "/external_encoderPosition", encPosition);        
-        }
+        //     double encPosition = encoder.getAbsPosition(); // 0.0 to 1.0, inclusive, increasing counterclockwise
+        //     SmartDashboard.putNumber(
+        //         "Swerve States/" + this.steeringMotorCANId + "/external_encoderPosition", encPosition);        
+        // }
     }
 }
