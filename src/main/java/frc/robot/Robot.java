@@ -4,17 +4,22 @@
 
 package frc.robot;
 
+import java.time.Duration;
+import java.time.Instant;
+
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
 public class Robot extends TimedRobot {
-  private Command m_autonomousCommand;
+  private final static long SWERVE_ENCODER_SET_FREQUECY_SECONDS = 1;
+  public Instant lastSwerveModuleSetTime = Instant.MIN;
 
-  private final RobotContainer m_robotContainer;
+  private Command autonomousCommand;
+  private final RobotContainer robotContainer;
 
   public Robot() {
-    m_robotContainer = new RobotContainer();
+    this.robotContainer = new RobotContainer();
   }
 
   @Override
@@ -26,17 +31,28 @@ public class Robot extends TimedRobot {
   public void disabledInit() {}
 
   @Override
-  public void disabledPeriodic() {}
+  public void disabledPeriodic() {
+    // set the swerve modules to the external encoders periodically
+    Instant now = Instant.now();
+    Duration duration = Duration.between(this.lastSwerveModuleSetTime, now);
+    if (duration.compareTo(Duration.ofSeconds(SWERVE_ENCODER_SET_FREQUECY_SECONDS)) >= 0) {
+      this.robotContainer.setSwerveModulesToEncoders();
+      this.lastSwerveModuleSetTime = now;
+    }
+  }
 
   @Override
-  public void disabledExit() {}
+  public void disabledExit() {
+    // Zero the gyro when we enable. We will probably have to start setting this
+    // differently at the start of autos. This clearly will have to change.
+    this.robotContainer.zeroGyro();
+  }
 
   @Override
   public void autonomousInit() {
-    m_autonomousCommand = m_robotContainer.getAutonomousCommand();
-
-    if (m_autonomousCommand != null) {
-      m_autonomousCommand.schedule();
+    this.autonomousCommand = this.robotContainer.getAutonomousCommand();
+    if (this.autonomousCommand != null) {
+      this.autonomousCommand.schedule();
     }
   }
 
@@ -48,8 +64,8 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
-    if (m_autonomousCommand != null) {
-      m_autonomousCommand.cancel();
+    if (this.autonomousCommand != null) {
+      this.autonomousCommand.cancel();
     }
   }
 
