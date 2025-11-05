@@ -66,7 +66,6 @@ public class SwerveModule {
 
     public void setModuleState(SwerveModuleState state) {
         // get the current position of the steering motor and optimize the state
-        // make sure positionOfSteering in [0.0, 1.0)
         double positionOfSteeringRad = 2*Math.PI*steeringMotor.getPosition().getValueAsDouble() / STEERING_GEAR_RATIO;
         state.optimize(new Rotation2d(-positionOfSteeringRad));
 

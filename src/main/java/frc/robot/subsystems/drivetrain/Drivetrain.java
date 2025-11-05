@@ -36,7 +36,7 @@ public class Drivetrain extends SubsystemBase {
 
   SwerveDriveKinematics kinematics;
   ChassisSpeeds desiredChassisSpeeds;
-  private final StructArrayPublisher<SwerveModuleState> publisher;
+  //private final StructArrayPublisher<SwerveModuleState> publisher;
 
   private final SwerveModule frontLeftModule = new SwerveModule(
       FRONT_LEFT_STEERING_CAN_ID, FRONT_LEFT_DRIVE_CAN_ID, FRONT_LEFT_ENCODER_CAN_ID);
@@ -62,8 +62,8 @@ public class Drivetrain extends SubsystemBase {
 
     this.desiredChassisSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
 
-    this.publisher = NetworkTableInstance.getDefault().getStructArrayTopic(
-        "/SwerveStates", SwerveModuleState.struct).publish();
+    // this.publisher = NetworkTableInstance.getDefault().getStructArrayTopic(
+    //     "/SwerveStates", SwerveModuleState.struct).publish();
   }
 
   public void setDesiredState(ChassisSpeeds desiredChassisSpeeds) {

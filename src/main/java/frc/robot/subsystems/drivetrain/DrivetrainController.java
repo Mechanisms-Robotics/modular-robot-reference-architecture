@@ -12,7 +12,7 @@ public class DrivetrainController {
 
     public ChassisSpeeds fieldToRobotChassisSpeeds(ChassisSpeeds fieldOriented)
     {
-        double angle = 2*Math.PI*poseEstimator.getYaw();
+        double angle = poseEstimator.getPose().getRotation().getRadians();
 
         double cosA = Math.cos(angle);
         double sinA = Math.sin(angle);
