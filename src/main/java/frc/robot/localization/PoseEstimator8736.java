@@ -1,9 +1,9 @@
 package frc.robot.localization;
 
 import com.reduxrobotics.sensors.canandgyro.Canandgyro;
-
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 
 /*
  * TEST PLAN:
@@ -29,5 +29,9 @@ public class PoseEstimator8736 {
     // THE ONLY THING THIS CURRENTLY RETURNS IS GYRO HEADING
     public Pose2d getPose() {
         return new Pose2d(0.0, 0.0, gyro.getRotation2d());
+    }
+
+    public void addVisionMeasurement(Pose3d pose, double timestampSeconds) {
+        // TODO: fill in
     }
 }
