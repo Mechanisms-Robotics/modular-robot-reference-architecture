@@ -1,6 +1,5 @@
 package frc.robot.subsystems.drivetrain;
 
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
@@ -8,31 +7,13 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import static frc.robot.CONSTANTS.*;
 
 public class Drivetrain extends SubsystemBase {
   // Per WPILib documentation +X is forward and +Y is left (oriented to the robot)
   // Positive rotation is counterclockwise
   
-  private static final Translation2d FRONT_LEFT_MODULE_LOCATION = new Translation2d(0.33, 0.23);
-  private static final Translation2d FRONT_RIGHT_MODULE_LOCATION = new Translation2d(0.33, -0.23);
-  private static final Translation2d BACK_LEFT_MODULE_LOCATION = new Translation2d(-0.33, 0.23);
-  private static final Translation2d BACK_RIGHT_MODULE_LOCATION = new Translation2d(-0.33, -0.23);
-
-  private static final int FRONT_LEFT_STEERING_CAN_ID = 5;
-  private static final int FRONT_LEFT_DRIVE_CAN_ID = 1;
-  private static final int FRONT_LEFT_ENCODER_CAN_ID = 1;
   
-  private static final int FRONT_RIGHT_STEERING_CAN_ID = 6;
-  private static final int FRONT_RIGHT_DRIVE_CAN_ID = 2;
-  private static final int FRONT_RIGHT_ENCODER_CAN_ID = 2;
-
-  private static final int BACK_LEFT_STEERING_CAN_ID = 4;
-  private static final int BACK_LEFT_DRIVE_CAN_ID = 8;
-  private static final int BACK_LEFT_ENCODER_CAN_ID = 4;
-
-  private static final int BACK_RIGHT_STEERING_CAN_ID = 3;
-  private static final int BACK_RIGHT_DRIVE_CAN_ID = 7;
-  private static final int BACK_RIGHT_ENCODER_CAN_ID = 3;
 
   SwerveDriveKinematics kinematics;
   ChassisSpeeds desiredChassisSpeeds;
