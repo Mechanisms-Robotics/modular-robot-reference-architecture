@@ -11,6 +11,11 @@ public class Drivetrain extends SubsystemBase {
   // Per WPILib documentation +X is forward and +Y is left (oriented to the robot)
   // Positive rotation is counterclockwise
   
+  private static final Translation2d FRONT_LEFT_MODULE_LOCATION = new Translation2d(0.33, 0.23);
+  private static final Translation2d FRONT_RIGHT_MODULE_LOCATION = new Translation2d(0.33, -0.23);
+  private static final Translation2d BACK_LEFT_MODULE_LOCATION = new Translation2d(-0.33, 0.23);
+  private static final Translation2d BACK_RIGHT_MODULE_LOCATION = new Translation2d(-0.33, -0.23);
+
   private static final int FRONT_LEFT_STEERING_CAN_ID = 5;
   private static final int FRONT_LEFT_DRIVE_CAN_ID = 1;
   private static final int FRONT_LEFT_ENCODER_CAN_ID = 1;
@@ -47,8 +52,12 @@ public class Drivetrain extends SubsystemBase {
    * Remember that the front of the robot is +X and the left side of the robot is
    * +Y.
    */
-  public Drivetrain(SwerveDriveKinematics kinematics) {
-    this.kinematics = kinematics;
+  public Drivetrain() {
+
+    this.kinematics = new SwerveDriveKinematics(
+        FRONT_LEFT_MODULE_LOCATION, FRONT_RIGHT_MODULE_LOCATION,
+        BACK_LEFT_MODULE_LOCATION, BACK_RIGHT_MODULE_LOCATION);
+
     this.desiredChassisSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
 
     // this.publisher = NetworkTableInstance.getDefault().getStructArrayTopic(
