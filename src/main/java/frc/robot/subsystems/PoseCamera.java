@@ -59,7 +59,8 @@ public class PoseCamera extends SubsystemBase {
                 SmartDashboard.putNumber(cameraName + "/pose/heading", poseEstimate.getRotation().getAngle());
                 SmartDashboard.putNumber(cameraName + "/timestamp", visionEstimate.get().timestampSeconds);
 
-                this.poseEstimator.addVisionMeasurement(poseEstimate, visionEstimate.get().timestampSeconds);
+                this.poseEstimator.addVisionMeasurement(poseEstimate.toPose2d(),
+                    visionEstimate.get().timestampSeconds);
             }
         }
     }

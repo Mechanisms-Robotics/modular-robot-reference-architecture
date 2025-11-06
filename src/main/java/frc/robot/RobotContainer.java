@@ -4,7 +4,9 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -22,12 +24,22 @@ public class RobotContainer {
   private static final double MAX_ANGULAR_RAD_PER_SEC = 3*Math.PI;
   private static final double DEADBAND = 0.08;
 
-  private final Drivetrain drivetrain = new Drivetrain();
+  private static final Translation2d FRONT_LEFT_MODULE_LOCATION = new Translation2d(0.33, 0.23);
+  private static final Translation2d FRONT_RIGHT_MODULE_LOCATION = new Translation2d(0.33, -0.23);
+  private static final Translation2d BACK_LEFT_MODULE_LOCATION = new Translation2d(-0.33, 0.23);
+  private static final Translation2d BACK_RIGHT_MODULE_LOCATION = new Translation2d(-0.33, -0.23);
+
+  SwerveDriveKinematics kinematics = new SwerveDriveKinematics(
+    FRONT_LEFT_MODULE_LOCATION, FRONT_RIGHT_MODULE_LOCATION,
+    BACK_LEFT_MODULE_LOCATION, BACK_RIGHT_MODULE_LOCATION);
+
+  private final Drivetrain drivetrain = new Drivetrain(kinematics);
   private final PoseEstimator8736 poseEstimator = new PoseEstimator8736();
   private final DrivetrainController drivetrainController = new DrivetrainController(poseEstimator);
 
   private static final int CONTROLLER_PORT = 0;
   private final CommandPS4Controller controller = new CommandPS4Controller(CONTROLLER_PORT);
+
 
   public RobotContainer() {
     configureBindings();

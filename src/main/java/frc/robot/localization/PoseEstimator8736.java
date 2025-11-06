@@ -3,7 +3,8 @@ package frc.robot.localization;
 import com.reduxrobotics.sensors.canandgyro.Canandgyro;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
 
 /*
  * TEST PLAN:
@@ -17,21 +18,30 @@ public class PoseEstimator8736 {
 
     private SwerveDrivePoseEstimator poseEstimator;
 
-    public void initialize(Pose2d pose) {
+    public void initialize(Pose2d pose, SwerveDriveKinematics kinematics) {
         double yawInRotations = pose.getRotation().getDegrees() / 360.0; // between 0.0 and 1.0
-        gyro.setYaw(yawInRotations);
+        this.gyro.setYaw(yawInRotations);
+        this.poseEstimator = new SwerveDrivePoseEstimator(
+            kinematics,
+            pose.getRotation(), // initial gyro angle
+            null, // this is a SwerveModulePosition[] array, but we don't have one here
+            pose);
     }
 
     public void zeroGyro() {
-        gyro.setYaw(0.0);
+        // TODO: Do we need to do anything with the poseEstimator when we zero the gyro?
+        this.gyro.setYaw(0.0);
     }
     
-    // THE ONLY THING THIS CURRENTLY RETURNS IS GYRO HEADING
     public Pose2d getPose() {
-        return new Pose2d(0.0, 0.0, gyro.getRotation2d());
+        return this.poseEstimator.getEstimatedPosition();
     }
 
-    public void addVisionMeasurement(Pose3d pose, double timestampSeconds) {
-        // TODO: fill in
+    public void addVisionMeasurement(Pose2d pose, double timestampSeconds) {
+        this.poseEstimator.addVisionMeasurement(pose, timestampSeconds);
+    }
+
+    public void addOdometryMeasurement(SwerveModulePosition[] positions) {
+        this.poseEstimator.update(this.gyro.getRotation2d(), positions);
     }
 }
