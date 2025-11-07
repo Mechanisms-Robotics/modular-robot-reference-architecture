@@ -3,7 +3,6 @@ package frc.robot.localization;
 import com.reduxrobotics.sensors.canandgyro.Canandgyro;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 
@@ -20,13 +19,15 @@ public class PoseEstimator8736 {
 
     private SwerveDrivePoseEstimator poseEstimator;
 
+    // TODO: Where do we call this from and do we need to make sure drivetrain encoders are set first?
+    // Can we just call this whenever we call setModulesToEncoders? Should they be called together?
     public void initialize(Pose2d pose, Drivetrain drivetrain) {
         double yawInRotations = pose.getRotation().getDegrees() / 360.0; // between 0.0 and 1.0
         this.gyro.setYaw(yawInRotations);
         this.poseEstimator = new SwerveDrivePoseEstimator(
             drivetrain.getKinematics(),
             pose.getRotation(), // initial gyro angle
-            null, // this is a SwerveModulePosition[] array, but we don't have one here
+            drivetrain.getModulePositions(),
             pose);
     }
 

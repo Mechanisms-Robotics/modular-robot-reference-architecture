@@ -7,6 +7,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.localization.PoseEstimator8736;
 
 public class Drivetrain extends SubsystemBase {
   // Per WPILib documentation +X is forward and +Y is left (oriented to the robot)
@@ -35,6 +36,7 @@ public class Drivetrain extends SubsystemBase {
 
   SwerveDriveKinematics kinematics;
   ChassisSpeeds desiredChassisSpeeds;
+  PoseEstimator8736 poseEstimator = null;
   //private final StructArrayPublisher<SwerveModuleState> publisher;
 
   private final SwerveModule frontLeftModule = new SwerveModule(
@@ -54,7 +56,6 @@ public class Drivetrain extends SubsystemBase {
    * +Y.
    */
   public Drivetrain() {
-
     this.kinematics = new SwerveDriveKinematics(
         FRONT_LEFT_MODULE_LOCATION, FRONT_RIGHT_MODULE_LOCATION,
         BACK_LEFT_MODULE_LOCATION, BACK_RIGHT_MODULE_LOCATION);
@@ -93,6 +94,10 @@ public class Drivetrain extends SubsystemBase {
     this.backRightModule.setModuleToEncoder();
   }
 
+  public void setPoseEstimator(PoseEstimator8736 poseEstimator) {
+    this.poseEstimator = poseEstimator;
+  }
+
   @Override
   public void periodic() {
     SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
@@ -114,6 +119,11 @@ public class Drivetrain extends SubsystemBase {
     this.frontRightModule.setModuleState(frontRightState);
     this.backLeftModule.setModuleState(backLeftState);
     this.backRightModule.setModuleState(backRightState);
+
+    // update the pose estimator
+    if (this.poseEstimator != null) {
+      this.poseEstimator.addOdometryMeasurement(this.getModulePositions());
+    }
   }
 
   /**

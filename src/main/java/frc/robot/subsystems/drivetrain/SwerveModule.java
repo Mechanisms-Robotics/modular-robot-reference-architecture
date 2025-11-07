@@ -56,8 +56,8 @@ public class SwerveModule {
 
     public void setModuleToEncoder() {
         // set the internal encoder based on the absolution position of the external encoder
-        double encPosition = encoder.getAbsPosition(); // 0.0 to 1.0, inclusive, increasing counterclockwise
-        steeringMotor.setPosition(STEERING_GEAR_RATIO*encPosition);
+        double encPosition = this.encoder.getAbsPosition(); // 0.0 to 1.0, inclusive, increasing counterclockwise
+        this.steeringMotor.setPosition(STEERING_GEAR_RATIO*encPosition);
 
         // set the steering motor to the current position so it doesn't try to move
         double positionInRotations = STEERING_GEAR_RATIO*encPosition;
@@ -66,11 +66,11 @@ public class SwerveModule {
     }
 
     public SwerveModulePosition getModulePosition() {
-        double positionOfSteeringRad = 2*Math.PI*steeringMotor.getPosition().getValueAsDouble() / STEERING_GEAR_RATIO;
+        double positionOfSteeringRad = 2*Math.PI*this.steeringMotor.getPosition().getValueAsDouble() / STEERING_GEAR_RATIO;
 
         // TODO: I don't think this is right
         double wheelCircumference = 2 * Math.PI * WHEEL_RADIUS_METERS;
-        double wheelRotations = driveMotor.getPosition().getValueAsDouble() / DRIVE_GEAR_RATIO;
+        double wheelRotations = this.driveMotor.getPosition().getValueAsDouble() / DRIVE_GEAR_RATIO;
         double distanceMeters = wheelRotations * wheelCircumference;
 
         return new SwerveModulePosition(distanceMeters, new Rotation2d(-positionOfSteeringRad));
