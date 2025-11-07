@@ -5,11 +5,13 @@ import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import frc.robot.subsystems.drivetrain.Drivetrain;
 
 /*
  * TEST PLAN:
  * 
  * Test fieldToRobotChassisSpeeds because of changes to the way we handle gyro angles.
+ * Test output of getModulePositions to make sure they are correct.
  */
 
 public class PoseEstimator8736 {
@@ -18,11 +20,11 @@ public class PoseEstimator8736 {
 
     private SwerveDrivePoseEstimator poseEstimator;
 
-    public void initialize(Pose2d pose, SwerveDriveKinematics kinematics) {
+    public void initialize(Pose2d pose, Drivetrain drivetrain) {
         double yawInRotations = pose.getRotation().getDegrees() / 360.0; // between 0.0 and 1.0
         this.gyro.setYaw(yawInRotations);
         this.poseEstimator = new SwerveDrivePoseEstimator(
-            kinematics,
+            drivetrain.getKinematics(),
             pose.getRotation(), // initial gyro angle
             null, // this is a SwerveModulePosition[] array, but we don't have one here
             pose);
