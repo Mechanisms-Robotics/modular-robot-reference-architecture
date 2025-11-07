@@ -1,4 +1,4 @@
-package frc.robot.localization;
+package frc.robot;
 
 import com.reduxrobotics.sensors.canandgyro.Canandgyro;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
@@ -38,6 +38,10 @@ public class PoseEstimator8736 {
     
     public Pose2d getPose() {
         return this.poseEstimator.getEstimatedPosition();
+    }
+
+    public double getGyroYaw() {
+        return this.gyro.getYaw(); // returns yaw in rotations
     }
 
     public void addVisionMeasurement(Pose2d pose, double timestampSeconds) {

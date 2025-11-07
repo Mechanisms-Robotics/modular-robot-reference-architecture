@@ -1,7 +1,7 @@
 package frc.robot.subsystems.drivetrain;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import frc.robot.localization.PoseEstimator8736;
+import frc.robot.PoseEstimator8736;
 
 public class DrivetrainController {
     private final PoseEstimator8736 poseEstimator;
@@ -12,7 +12,7 @@ public class DrivetrainController {
 
     public ChassisSpeeds fieldToRobotChassisSpeeds(ChassisSpeeds fieldOriented)
     {
-        double angle = poseEstimator.getPose().getRotation().getRadians();
+        double angle = 2*Math.PI*poseEstimator.getGyroYaw();
 
         double cosA = Math.cos(angle);
         double sinA = Math.sin(angle);

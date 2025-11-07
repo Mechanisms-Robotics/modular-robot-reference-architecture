@@ -18,7 +18,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.CONSTANTS;
-import frc.robot.localization.PoseEstimator8736;
+import frc.robot.PoseEstimator8736;
 
 public class PoseCamera extends SubsystemBase {
     private final PhotonCamera camera;
