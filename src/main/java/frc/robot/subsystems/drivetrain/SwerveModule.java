@@ -7,6 +7,7 @@ import com.ctre.phoenix6.controls.VelocityDutyCycle;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.reduxrobotics.sensors.canandmag.Canandmag;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -55,8 +56,8 @@ public class SwerveModule {
 
     public void setModuleToEncoder() {
         // set the internal encoder based on the absolution position of the external encoder
-        double encPosition = encoder.getAbsPosition(); // 0.0 to 1.0, inclusive, increasing counterclockwise
-        steeringMotor.setPosition(STEERING_GEAR_RATIO*encPosition);
+        double encPosition = this.encoder.getAbsPosition(); // 0.0 to 1.0, inclusive, increasing counterclockwise
+        this.steeringMotor.setPosition(STEERING_GEAR_RATIO*encPosition);
 
         // set the steering motor to the current position so it doesn't try to move
         double positionInRotations = STEERING_GEAR_RATIO*encPosition;
@@ -64,11 +65,21 @@ public class SwerveModule {
         this.steeringMotor.setControl(steeringControlRequest);
     }
 
+    public SwerveModulePosition getModulePosition() {
+        double positionOfSteeringRad = 2*Math.PI*this.steeringMotor.getPosition().getValueAsDouble() / STEERING_GEAR_RATIO;
+
+        // TODO: I don't think this is right
+        double wheelCircumference = 2 * Math.PI * WHEEL_RADIUS_METERS;
+        double wheelRotations = this.driveMotor.getPosition().getValueAsDouble() / DRIVE_GEAR_RATIO;
+        double distanceMeters = wheelRotations * wheelCircumference;
+
+        return new SwerveModulePosition(distanceMeters, new Rotation2d(-positionOfSteeringRad));
+    }
+
     public void setModuleState(SwerveModuleState state) {
         // get the current position of the steering motor and optimize the state
-        // make sure positionOfSteering in [0.0, 1.0)
-        double positionOfSteeringRad = 2*Math.PI*steeringMotor.getPosition().getValueAsDouble() / STEERING_GEAR_RATIO;
-        state.optimize(new Rotation2d(-positionOfSteeringRad));
+        SwerveModulePosition currentPosition = getModulePosition();
+        state.optimize(currentPosition.angle);
 
         // set the position of the steering motor
         // remember that angle is the negative of what the motors want, hence the minus
@@ -77,7 +88,7 @@ public class SwerveModule {
         this.steeringMotor.setControl(steeringControlRequest);
 
         // calculate a speed scale factor (cosine compensation)
-        double scaleFactor = state.angle.minus(new Rotation2d(-positionOfSteeringRad)).getCos();
+        double scaleFactor = state.angle.minus(currentPosition.angle).getCos();
         
         // set the speed of the drive motor
         final double FUDGE_FACTOR = 1.6; // TODO: Measure and change to EFFECTIVE_GEAR_RATIO, eliminating all the other constants here

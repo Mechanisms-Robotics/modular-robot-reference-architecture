@@ -3,11 +3,11 @@ package frc.robot.subsystems.drivetrain;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.PoseEstimator8736;
 
 public class Drivetrain extends SubsystemBase {
   // Per WPILib documentation +X is forward and +Y is left (oriented to the robot)
@@ -36,7 +36,8 @@ public class Drivetrain extends SubsystemBase {
 
   SwerveDriveKinematics kinematics;
   ChassisSpeeds desiredChassisSpeeds;
-  private final StructArrayPublisher<SwerveModuleState> publisher;
+  PoseEstimator8736 poseEstimator = null;
+  //private final StructArrayPublisher<SwerveModuleState> publisher;
 
   private final SwerveModule frontLeftModule = new SwerveModule(
       FRONT_LEFT_STEERING_CAN_ID, FRONT_LEFT_DRIVE_CAN_ID, FRONT_LEFT_ENCODER_CAN_ID);
@@ -55,15 +56,14 @@ public class Drivetrain extends SubsystemBase {
    * +Y.
    */
   public Drivetrain() {
-
     this.kinematics = new SwerveDriveKinematics(
         FRONT_LEFT_MODULE_LOCATION, FRONT_RIGHT_MODULE_LOCATION,
         BACK_LEFT_MODULE_LOCATION, BACK_RIGHT_MODULE_LOCATION);
 
     this.desiredChassisSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
 
-    this.publisher = NetworkTableInstance.getDefault().getStructArrayTopic(
-        "/SwerveStates", SwerveModuleState.struct).publish();
+    // this.publisher = NetworkTableInstance.getDefault().getStructArrayTopic(
+    //     "/SwerveStates", SwerveModuleState.struct).publish();
   }
 
   public void setDesiredState(ChassisSpeeds desiredChassisSpeeds) {
@@ -74,11 +74,28 @@ public class Drivetrain extends SubsystemBase {
     return this.desiredChassisSpeeds;
   }
 
+  public SwerveDriveKinematics getKinematics() {
+    return this.kinematics;
+  }
+
+  public SwerveModulePosition[] getModulePositions() {
+    return new SwerveModulePosition[] {
+        this.frontLeftModule.getModulePosition(),
+        this.frontRightModule.getModulePosition(),
+        this.backLeftModule.getModulePosition(),
+        this.backRightModule.getModulePosition()
+    };
+  }
+
   public void setModulesToEncoders() {
     this.frontLeftModule.setModuleToEncoder();
     this.frontRightModule.setModuleToEncoder();
     this.backLeftModule.setModuleToEncoder();
     this.backRightModule.setModuleToEncoder();
+  }
+
+  public void setPoseEstimator(PoseEstimator8736 poseEstimator) {
+    this.poseEstimator = poseEstimator;
   }
 
   @Override
@@ -102,6 +119,11 @@ public class Drivetrain extends SubsystemBase {
     this.frontRightModule.setModuleState(frontRightState);
     this.backLeftModule.setModuleState(backLeftState);
     this.backRightModule.setModuleState(backRightState);
+
+    // update the pose estimator
+    if (this.poseEstimator != null) {
+      this.poseEstimator.addOdometryMeasurement(this.getModulePositions());
+    }
   }
 
   /**
