@@ -14,12 +14,10 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 public class SwerveModule {
     private static final boolean OUTPUT_TO_SMART_DASH = true;
 
-    private static final double WHEEL_RADIUS_METERS = 0.0508; // from the internet
     private static final double STEERING_GEAR_RATIO = 150.0/7.0; // from SDS website
-    private static final double DRIVE_GEAR_RATIO = 6.75; // L2 from SDS website
     
     // TODO: Determine this experimentally and not using math, just change everything
-    private static final double EFFECTIVE_GEAR_RATIO = 1.6 * DRIVE_GEAR_RATIO * 2 * Math.PI * WHEEL_RADIUS_METERS;
+    private static final double EFFECTIVE_GEAR_RATIO = 21.0;
 
     private final int steeringMotorCANId;
 
