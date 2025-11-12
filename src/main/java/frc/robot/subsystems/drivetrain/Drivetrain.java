@@ -1,10 +1,12 @@
 package frc.robot.subsystems.drivetrain;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.PoseEstimator8736;
@@ -36,7 +38,7 @@ public class Drivetrain extends SubsystemBase {
 
   SwerveDriveKinematics kinematics;
   ChassisSpeeds desiredChassisSpeeds;
-  PoseEstimator8736 poseEstimator = null;
+  PoseEstimator8736 poseEstimator;
   //private final StructArrayPublisher<SwerveModuleState> publisher;
 
   private final SwerveModule frontLeftModule = new SwerveModule(
@@ -100,6 +102,17 @@ public class Drivetrain extends SubsystemBase {
 
   @Override
   public void periodic() {
+    // update the pose estimator
+
+    this.poseEstimator.addOdometryMeasurement(this.getModulePositions());
+
+    Pose2d pose = this.poseEstimator.getPose();
+    SmartDashboard.putNumber("Pose Estimator/X", pose.getX());
+    SmartDashboard.putNumber("Pose Estimator/Y", pose.getY());
+    SmartDashboard.putNumber("Pose Estimator/Rotation Degrees", pose.getRotation().getDegrees());
+
+    // send the new desired states down to the modules
+
     SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
       this.desiredChassisSpeeds);
 
@@ -119,11 +132,6 @@ public class Drivetrain extends SubsystemBase {
     this.frontRightModule.setModuleState(frontRightState);
     this.backLeftModule.setModuleState(backLeftState);
     this.backRightModule.setModuleState(backRightState);
-
-    // update the pose estimator
-    if (this.poseEstimator != null) {
-      this.poseEstimator.addOdometryMeasurement(this.getModulePositions());
-    }
   }
 
   /**

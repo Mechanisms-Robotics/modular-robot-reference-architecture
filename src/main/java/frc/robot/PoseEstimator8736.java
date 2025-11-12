@@ -5,6 +5,7 @@ import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 
 /*
@@ -18,7 +19,7 @@ public class PoseEstimator8736 {
     private static final int GYRO_CAN_ID = 9;
     private final Canandgyro gyro = new Canandgyro(GYRO_CAN_ID);
 
-    private SwerveDrivePoseEstimator poseEstimator;
+    private SwerveDrivePoseEstimator swervePoseEstimator;
     private Drivetrain drivetrain;
 
     // TODO: Where do we call this from and do we need to make sure drivetrain encoders are set first?
@@ -27,7 +28,7 @@ public class PoseEstimator8736 {
         double yawInRotations = pose.getRotation().getDegrees() / 360.0; // between 0.0 and 1.0
         this.gyro.setYaw(yawInRotations);
         this.drivetrain = drivetrain;
-        this.poseEstimator = new SwerveDrivePoseEstimator(
+        this.swervePoseEstimator = new SwerveDrivePoseEstimator(
             drivetrain.getKinematics(),
             pose.getRotation(), // initial gyro angle  TODO: Should I use the actual gyro angle instead?
             drivetrain.getModulePositions(),
@@ -38,7 +39,7 @@ public class PoseEstimator8736 {
         // also resets the pose estimator, if it has been previously initialized
         
         Pose2d startingPose = null;
-        if (this.poseEstimator != null) {
+        if (this.swervePoseEstimator != null) {
             startingPose = getPose();
             startingPose = new Pose2d(
                 startingPose.getX(),
@@ -54,7 +55,7 @@ public class PoseEstimator8736 {
     }
     
     public Pose2d getPose() {
-        return this.poseEstimator.getEstimatedPosition();
+        return this.swervePoseEstimator.getEstimatedPosition();
     }
 
     public double getGyroYaw() {
@@ -62,10 +63,10 @@ public class PoseEstimator8736 {
     }
 
     public void addVisionMeasurement(Pose2d pose, double timestampSeconds) {
-        this.poseEstimator.addVisionMeasurement(pose, timestampSeconds);
+        this.swervePoseEstimator.addVisionMeasurement(pose, timestampSeconds);
     }
 
     public void addOdometryMeasurement(SwerveModulePosition[] positions) {
-        this.poseEstimator.update(this.gyro.getRotation2d(), positions);
+        this.swervePoseEstimator.update(this.gyro.getRotation2d(), positions);
     }
 }
