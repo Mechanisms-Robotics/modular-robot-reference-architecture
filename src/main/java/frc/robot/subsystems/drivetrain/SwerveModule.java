@@ -70,13 +70,9 @@ public class SwerveModule {
 
     public SwerveModulePosition getModulePosition() {
         double positionOfSteeringRad = 2*Math.PI*this.steeringMotor.getPosition().getValueAsDouble() / STEERING_GEAR_RATIO;
-
-        // TODO: I don't think this is right because we need to account for the other constants
-        double wheelCircumference = 2 * Math.PI * WHEEL_RADIUS_METERS;
-        double wheelRotations = this.driveMotor.getPosition().getValueAsDouble() / DRIVE_GEAR_RATIO;
-        double distanceMeters = wheelRotations * wheelCircumference;
-
-        return new SwerveModulePosition(distanceMeters, new Rotation2d(-positionOfSteeringRad));
+        double wheelRotations = this.driveMotor.getPosition().getValueAsDouble();
+        return new SwerveModulePosition(
+            wheelRotations / EFFECTIVE_GEAR_RATIO, new Rotation2d(-positionOfSteeringRad));
     }
 
     public void setModuleState(SwerveModuleState state) {
