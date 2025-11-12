@@ -38,7 +38,7 @@ public class Drivetrain extends SubsystemBase {
 
   SwerveDriveKinematics kinematics;
   ChassisSpeeds desiredChassisSpeeds;
-  PoseEstimator8736 poseEstimator = null;
+  PoseEstimator8736 poseEstimator = new PoseEstimator8736();
   //private final StructArrayPublisher<SwerveModuleState> publisher;
 
   private final SwerveModule frontLeftModule = new SwerveModule(
@@ -103,20 +103,13 @@ public class Drivetrain extends SubsystemBase {
   @Override
   public void periodic() {
     // update the pose estimator
-    if (this.poseEstimator != null) {
-      this.poseEstimator.addOdometryMeasurement(this.getModulePositions());
 
-      Pose2d pose = this.poseEstimator.getPose();
+    this.poseEstimator.addOdometryMeasurement(this.getModulePositions());
 
-      SmartDashboard.putNumber("Pose Estimator/X", pose.getX());
-      SmartDashboard.putNumber("Pose Estimator/Y", pose.getY());
-      SmartDashboard.putNumber("Pose Estimator/Rotation Degrees", pose.getRotation().getDegrees());
-
-              //     SmartDashboard.putNumber(
-        //         "Swerve States/" + this.steeringMotorCANId + "/Drive/demand_wheelRotationsPerSecond", wheelRotationsPerSecond);
-            
-
-    }
+    Pose2d pose = this.poseEstimator.getPose();
+    SmartDashboard.putNumber("Pose Estimator/X", pose.getX());
+    SmartDashboard.putNumber("Pose Estimator/Y", pose.getY());
+    SmartDashboard.putNumber("Pose Estimator/Rotation Degrees", pose.getRotation().getDegrees());
 
     // send the new desired states down to the modules
 

@@ -30,13 +30,13 @@ public class RobotContainer {
   private final CommandPS4Controller controller = new CommandPS4Controller(CONTROLLER_PORT);
 
   public RobotContainer() {
+    // TODO: Think about where to initialize this
+    this.poseEstimator.initialize(new Pose2d(), this.drivetrain);
     configureBindings();
   }
 
   public void setSwerveModulesToEncoders() {
     this.drivetrain.setModulesToEncoders();
-    // TODO: This is not a permanent home for this, but we need to think about where to put it.
-    this.poseEstimator.initialize(new Pose2d(), this.drivetrain);
   }
 
   public void zeroGyro() {
