@@ -100,6 +100,13 @@ public class Drivetrain extends SubsystemBase {
 
   @Override
   public void periodic() {
+    // update the pose estimator
+    if (this.poseEstimator != null) {
+      this.poseEstimator.addOdometryMeasurement(this.getModulePositions());
+    }
+
+    // send the new desired states down to the modules
+
     SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
       this.desiredChassisSpeeds);
 
@@ -119,11 +126,6 @@ public class Drivetrain extends SubsystemBase {
     this.frontRightModule.setModuleState(frontRightState);
     this.backLeftModule.setModuleState(backLeftState);
     this.backRightModule.setModuleState(backRightState);
-
-    // update the pose estimator
-    if (this.poseEstimator != null) {
-      this.poseEstimator.addOdometryMeasurement(this.getModulePositions());
-    }
   }
 
   /**

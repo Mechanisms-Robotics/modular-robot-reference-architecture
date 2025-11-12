@@ -17,6 +17,9 @@ public class SwerveModule {
     private static final double WHEEL_RADIUS_METERS = 0.0508; // from the internet
     private static final double STEERING_GEAR_RATIO = 150.0/7.0; // from SDS website
     private static final double DRIVE_GEAR_RATIO = 6.75; // L2 from SDS website
+    
+    // TODO: Determine this experimentally and not using math, just change everything
+    private static final double EFFECTIVE_GEAR_RATIO = 1.6 * DRIVE_GEAR_RATIO * 2 * Math.PI * WHEEL_RADIUS_METERS;
 
     private final int steeringMotorCANId;
 
@@ -68,7 +71,7 @@ public class SwerveModule {
     public SwerveModulePosition getModulePosition() {
         double positionOfSteeringRad = 2*Math.PI*this.steeringMotor.getPosition().getValueAsDouble() / STEERING_GEAR_RATIO;
 
-        // TODO: I don't think this is right
+        // TODO: I don't think this is right because we need to account for the other constants
         double wheelCircumference = 2 * Math.PI * WHEEL_RADIUS_METERS;
         double wheelRotations = this.driveMotor.getPosition().getValueAsDouble() / DRIVE_GEAR_RATIO;
         double distanceMeters = wheelRotations * wheelCircumference;
@@ -91,11 +94,8 @@ public class SwerveModule {
         double scaleFactor = state.angle.minus(currentPosition.angle).getCos();
         
         // set the speed of the drive motor
-        final double FUDGE_FACTOR = 1.6; // TODO: Measure and change to EFFECTIVE_GEAR_RATIO, eliminating all the other constants here
-        double wheelCircumference = 2 * Math.PI * WHEEL_RADIUS_METERS;
-        double wheelRotationsPerSecond = state.speedMetersPerSecond / wheelCircumference;
-        double motorRotationsPerSecond = wheelRotationsPerSecond * DRIVE_GEAR_RATIO * FUDGE_FACTOR;
-        ControlRequest driveControlRequest = new VelocityDutyCycle(motorRotationsPerSecond*scaleFactor);
+        ControlRequest driveControlRequest = new VelocityDutyCycle(
+            EFFECTIVE_GEAR_RATIO*state.speedMetersPerSecond*scaleFactor);
         this.driveMotor.setControl(driveControlRequest);
 
         // this is probably not the best place for this code, but this is a sandbox project
