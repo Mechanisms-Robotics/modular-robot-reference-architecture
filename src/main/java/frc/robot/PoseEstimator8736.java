@@ -5,6 +5,7 @@ import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 
 /*
@@ -54,10 +55,6 @@ public class PoseEstimator8736 {
     }
     
     public Pose2d getPose() {
-        if (this.swervePoseEstimator == null) {
-            // TODO: Why is this null when the robot code starts?
-            return new Pose2d(); // return origin if not initialized
-        }
         return this.swervePoseEstimator.getEstimatedPosition();
     }
 
@@ -70,10 +67,6 @@ public class PoseEstimator8736 {
     }
 
     public void addOdometryMeasurement(SwerveModulePosition[] positions) {
-        if (this.swervePoseEstimator == null) {
-            // TODO: Why is this null when the robot code starts?
-            return;
-        }
         this.swervePoseEstimator.update(this.gyro.getRotation2d(), positions);
     }
 }

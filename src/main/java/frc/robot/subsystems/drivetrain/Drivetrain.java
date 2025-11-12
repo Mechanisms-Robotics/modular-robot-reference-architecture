@@ -38,7 +38,7 @@ public class Drivetrain extends SubsystemBase {
 
   SwerveDriveKinematics kinematics;
   ChassisSpeeds desiredChassisSpeeds;
-  PoseEstimator8736 poseEstimator = new PoseEstimator8736();
+  PoseEstimator8736 poseEstimator;
   //private final StructArrayPublisher<SwerveModuleState> publisher;
 
   private final SwerveModule frontLeftModule = new SwerveModule(

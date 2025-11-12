@@ -30,8 +30,9 @@ public class RobotContainer {
   private final CommandPS4Controller controller = new CommandPS4Controller(CONTROLLER_PORT);
 
   public RobotContainer() {
-    // TODO: Think about where to initialize this
+    // TODO: Think about where to initialize all of this properly
     this.poseEstimator.initialize(new Pose2d(), this.drivetrain);
+    this.drivetrain.setPoseEstimator(this.poseEstimator);
     configureBindings();
   }
 
