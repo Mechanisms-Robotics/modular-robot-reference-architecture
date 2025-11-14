@@ -13,14 +13,11 @@ import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import frc.robot.localization.PoseEstimator8736;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.subsystems.drivetrain.DrivetrainController;
+import static frc.robot.CONSTANTS.*;
 
 public class RobotContainer {
   // TODO: This should be set to the robot's actual max speeds and then we should set the controller's
   // response curves. Determine these experimentally.
-
-  private static final double MAX_SPEED_METERS_PER_SEC = 5.0;
-  private static final double MAX_ANGULAR_RAD_PER_SEC = 3*Math.PI;
-  private static final double DEADBAND = 0.08;
 
   private final Drivetrain drivetrain = new Drivetrain();
   private final PoseEstimator8736 poseEstimator = new PoseEstimator8736();

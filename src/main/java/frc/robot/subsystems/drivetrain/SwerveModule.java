@@ -9,13 +9,10 @@ import com.reduxrobotics.sensors.canandmag.Canandmag;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import static frc.robot.CONSTANTS.*;
 
 public class SwerveModule {
     private static final boolean OUTPUT_TO_SMART_DASH = true;
-
-    private static final double WHEEL_RADIUS_METERS = 0.0508; // from the internet
-    private static final double STEERING_GEAR_RATIO = 150.0/7.0; // from SDS website
-    private static final double DRIVE_GEAR_RATIO = 6.75; // L2 from SDS website
 
     private final int steeringMotorCANId;
 
