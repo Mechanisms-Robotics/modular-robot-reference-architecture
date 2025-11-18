@@ -16,8 +16,6 @@ import frc.robot.subsystems.drivetrain.DrivetrainController;
 import static frc.robot.CONSTANTS.*;
 
 public class RobotContainer {
-  // TODO: This should be set to the robot's actual max speeds and then we should set the controller's
-  // response curves. Determine these experimentally.
 
   private final Drivetrain drivetrain = new Drivetrain();
   private final PoseEstimator8736 poseEstimator = new PoseEstimator8736();
@@ -76,3 +74,4 @@ public class RobotContainer {
     return Commands.print("No autonomous command configured");
   }
 }
+
