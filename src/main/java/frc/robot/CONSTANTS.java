@@ -33,8 +33,10 @@ public class CONSTANTS {
     public static final int BACK_RIGHT_STEERING_CAN_ID = 3;
     public static final int BACK_RIGHT_DRIVE_CAN_ID = 7;
     public static final int BACK_RIGHT_ENCODER_CAN_ID = 3;
-
+    
     public static final int CONTROLLER_PORT = 0;
+    // TODO: This should be set to the robot's actual max speeds and then we should set the controller's
+    // response curves. Determine these experimentally.
     public static final double MAX_SPEED_METERS_PER_SEC = 5.0;
     public static final double MAX_ANGULAR_RAD_PER_SEC = 3*Math.PI;
     public static final double DEADBAND = 0.08;
@@ -48,3 +50,4 @@ public class CONSTANTS {
     public static final int GYRO_CAN_ID = 9;
 
 }
+
