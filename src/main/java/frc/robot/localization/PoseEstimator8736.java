@@ -3,9 +3,9 @@ package frc.robot.localization;
 import com.reduxrobotics.sensors.canandgyro.Canandgyro;
 
 import edu.wpi.first.math.geometry.Pose3d;
+import static frc.robot.CONSTANTS.*;
 
 public class PoseEstimator8736 {
-    private static final int GYRO_CAN_ID = 9;
     private final Canandgyro gyro = new Canandgyro(GYRO_CAN_ID);
 
     public void zeroGyro() {

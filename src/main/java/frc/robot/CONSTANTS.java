@@ -34,6 +34,7 @@ public class CONSTANTS {
     public static final int BACK_RIGHT_DRIVE_CAN_ID = 7;
     public static final int BACK_RIGHT_ENCODER_CAN_ID = 3;
 
+    public static final int CONTROLLER_PORT = 0;
     public static final double MAX_SPEED_METERS_PER_SEC = 5.0;
     public static final double MAX_ANGULAR_RAD_PER_SEC = 3*Math.PI;
     public static final double DEADBAND = 0.08;
@@ -43,4 +44,7 @@ public class CONSTANTS {
     public static final double WHEEL_RADIUS_METERS = 0.0508; // from the internet
     public static final double STEERING_GEAR_RATIO = 150.0/7.0; // from SDS website
     public static final double DRIVE_GEAR_RATIO = 6.75; // L2 from SDS website
+
+    public static final int GYRO_CAN_ID = 9;
+
 }
