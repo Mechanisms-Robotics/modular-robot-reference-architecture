@@ -10,9 +10,9 @@ import java.time.Instant;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import static frc.robot.CONSTANTS.*;
 
 public class Robot extends TimedRobot {
-  private final static long SWERVE_ENCODER_SET_FREQUECY_SECONDS = 1;
   public Instant lastSwerveModuleSetTime = Instant.MIN;
 
   private Command autonomousCommand;

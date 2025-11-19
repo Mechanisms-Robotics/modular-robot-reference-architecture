@@ -10,14 +10,10 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import static frc.robot.CONSTANTS.*;
 
 public class SwerveModule {
     private static final boolean OUTPUT_TO_SMART_DASH = true;
-
-    private static final double STEERING_GEAR_RATIO = 150.0/7.0; // from SDS website
-    
-    // TODO: Determine this experimentally and not using math, just change everything
-    private static final double EFFECTIVE_GEAR_RATIO = 21.0;
 
     private final int steeringMotorCANId;
 
