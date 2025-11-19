@@ -46,10 +46,11 @@ public class CONSTANTS {
 
     public final static long SWERVE_ENCODER_SET_FREQUECY_SECONDS = 1;
 
-    public static final double WHEEL_RADIUS_METERS = 0.0508; // from the internet
     public static final double STEERING_GEAR_RATIO = 150.0/7.0; // from SDS website
-    public static final double DRIVE_GEAR_RATIO = 6.75; // L2 from SDS website
-
+    
+    // TODO: Determine this experimentally and not using math, just change everything
+    public static final double EFFECTIVE_GEAR_RATIO = 21.0;
+    
     //Localization
     public static final int GYRO_CAN_ID = 9;
 
