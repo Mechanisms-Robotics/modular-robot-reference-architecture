@@ -22,16 +22,6 @@ public class FollowPath extends Command {
 
   private final Timer timer = new Timer();
   private final HolonomicDriveController holonomic;
-
-  // ---- Tunable constants ----
-  private static final double kPX = 1.0;
-  private static final double kPY = 1.0;
-  private static final double kPTheta = 3.0;
-
-  private static final double kMaxAngularVel = Math.PI;        // rad/s
-  private static final double kMaxAngularAccel = Math.PI * 2;  // rad/s²
-  // ----------------------------
-
   
   public FollowPath(
       Trajectory trajectory,
@@ -45,15 +35,16 @@ public class FollowPath extends Command {
     this.resetPose = resetPose;
 
     var thetaProfile = new TrapezoidProfile.Constraints(
-        kMaxAngularVel, kMaxAngularAccel);
+        CONSTANTS.MAX_ANGULAR_RAD_PER_SEC, CONSTANTS.MAX_ANGULAR_RAD_PER_SEC * 2);
 
     var thetaController =
-        new ProfiledPIDController(kPTheta, 0, 0, thetaProfile);
+        new ProfiledPIDController(CONSTANTS.PATH_FOLLOWER_P_THETA, 0, 0, thetaProfile);
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
 
+    // TODO: Tune the controller.
     holonomic = new HolonomicDriveController(
-        new PIDController(kPX, 0, 0),
-        new PIDController(kPY, 0, 0),
+        new PIDController(CONSTANTS.PATH_FOLLOWER_P_X, 0, 0),
+        new PIDController(CONSTANTS.PATH_FOLLOWER_P_Y, 0, 0),
         thetaController
     );
 
@@ -108,8 +99,5 @@ public class FollowPath extends Command {
   @Override
   public boolean isFinished() { // TODO: If precition is important we may need an end-state controller.
     return timer.get() >= trajectory.getTotalTimeSeconds(); 
-  }
-
-  // Required for the Command interface:
-  
+  }  
 }
