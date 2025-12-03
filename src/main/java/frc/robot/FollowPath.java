@@ -32,6 +32,7 @@ public class FollowPath extends Command {
   private static final double kMaxAngularAccel = Math.PI * 2;  // rad/s²
   // ----------------------------
 
+  
   public FollowPath(
       Trajectory trajectory,
       Drivetrain drivetrain,
@@ -55,6 +56,8 @@ public class FollowPath extends Command {
         new PIDController(kPY, 0, 0),
         thetaController
     );
+
+    super.addRequirements(drivetrain);
   }
 
   // ------------------------
@@ -98,18 +101,15 @@ public class FollowPath extends Command {
 
   @Override
   public void end(boolean interrupted) {
-    drivetrain.setDesiredState(new ChassisSpeeds());
+    drivetrain.setDesiredState(new ChassisSpeeds()); // TODO: There may be cases where we don't want the robot to stop!
     timer.stop();
   }
 
   @Override
-  public boolean isFinished() {
-    return timer.get() >= trajectory.getTotalTimeSeconds();
+  public boolean isFinished() { // TODO: If precition is important we may need an end-state controller.
+    return timer.get() >= trajectory.getTotalTimeSeconds(); 
   }
 
   // Required for the Command interface:
-  @Override
-  public java.util.Set<edu.wpi.first.wpilibj2.command.Subsystem> getRequirements() {
-    return java.util.Set.of(drivetrain);
-  }
+  
 }
