@@ -5,6 +5,7 @@
 package frc.robot;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -13,6 +14,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.subsystems.drivetrain.DrivetrainController;
+import frc.robot.subsystems.PoseCamera;
 import static frc.robot.CONSTANTS.*;
 
 public class RobotContainer {
@@ -20,6 +22,7 @@ public class RobotContainer {
   private final Drivetrain drivetrain = new Drivetrain();
   private final PoseEstimator8736 poseEstimator = new PoseEstimator8736();
   private final DrivetrainController drivetrainController = new DrivetrainController(poseEstimator);
+  private final PoseCamera testCamera = new PoseCamera("PhotonCamera2", Transform3d.kZero, poseEstimator);
 
   private final CommandPS4Controller controller = new CommandPS4Controller(CONTROLLER_PORT);
 

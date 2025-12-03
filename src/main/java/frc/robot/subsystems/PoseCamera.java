@@ -15,6 +15,8 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.CONSTANTS;
@@ -27,6 +29,8 @@ public class PoseCamera extends SubsystemBase {
 
     private PoseEstimator8736 poseEstimator;
     private PhotonPoseEstimator photonEstimator;
+
+    private final StructPublisher<Pose3d> visionLocalisationPublisher;
 
     public PoseCamera(String cameraName, Transform3d cameraToRobot, PoseEstimator8736 poseEstimator) {
         this.camera = new PhotonCamera(cameraName);
@@ -41,6 +45,10 @@ public class PoseCamera extends SubsystemBase {
             this.cameraToRobot);
 
         this.photonEstimator.setMultiTagFallbackStrategy(PoseStrategy.LOWEST_AMBIGUITY);
+
+        // for sending a whole Pose3d object so we can use it with AdvantageScope
+        visionLocalisationPublisher = NetworkTableInstance.getDefault().getTable("SmartDashboard")
+            .getStructTopic(cameraName + "/Vision Localisation Pose3d", Pose3d.struct).publish();
     }
 
     @Override
@@ -56,8 +64,11 @@ public class PoseCamera extends SubsystemBase {
 
                 SmartDashboard.putNumber(cameraName + "/pose/x", poseEstimate.getX());
                 SmartDashboard.putNumber(cameraName + "/pose/y", poseEstimate.getY());
+                SmartDashboard.putNumber(cameraName + "/pose/z", poseEstimate.getZ());
                 SmartDashboard.putNumber(cameraName + "/pose/heading", poseEstimate.getRotation().getAngle());
                 SmartDashboard.putNumber(cameraName + "/timestamp", visionEstimate.get().timestampSeconds);
+
+                visionLocalisationPublisher.set(poseEstimate);
 
                 this.poseEstimator.addVisionMeasurement(poseEstimate.toPose2d(),
                     visionEstimate.get().timestampSeconds);
