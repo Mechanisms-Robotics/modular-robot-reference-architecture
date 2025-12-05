@@ -1,12 +1,15 @@
 package frc.robot;
 
+import java.util.Optional;
+
+import choreo.trajectory.SwerveSample;
+import choreo.trajectory.Trajectory;
 import edu.wpi.first.math.controller.HolonomicDriveController;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -15,7 +18,7 @@ import frc.robot.subsystems.drivetrain.Drivetrain;
 
 public class FollowPath extends Command {
 
-  private final Trajectory trajectory;
+  private final Trajectory<SwerveSample> trajectory;
   private final Drivetrain drivetrain;
   private final PoseEstimator8736 poseEstimator;
   private final boolean resetPose;
@@ -24,7 +27,7 @@ public class FollowPath extends Command {
   private final HolonomicDriveController holonomic;
   
   public FollowPath(
-      Trajectory trajectory,
+      Trajectory<SwerveSample> trajectory,
       Drivetrain drivetrain,
       PoseEstimator8736 poseEstimator,
       boolean resetPose) {
@@ -62,32 +65,32 @@ public class FollowPath extends Command {
     timer.start();
 
     if (resetPose) {
+      Optional<Pose2d> initialPose = trajectory.getInitialPose(false); // TODO: Should we mirror for red?
+      if (initialPose.isEmpty()) {
+        // TODO: Why would this ever happen? Should we handle it differently?
+        throw new IllegalStateException("Trajectory has no initial pose!");
+      }
       drivetrain.setModulesToEncoders();
       poseEstimator.initialize(
-          trajectory.getInitialPose(),
+          initialPose.get(),
           drivetrain);
     }
   }
 
   @Override
   public void execute() {
-
     double t = timer.get();
-    Trajectory.State goal = trajectory.sample(t);
-    Pose2d currentPose = poseEstimator.getPose();
 
-    // Follow the trajectory’s rotation
-    Rotation2d desiredHeading = goal.poseMeters.getRotation();
+    Optional<SwerveSample> swerveSample = trajectory.sampleAt(
+      t, false); // TODO: Should we mirror for red?
+    if (swerveSample.isEmpty()) {
+      return; // TODO: Why would this ever happen? Should we handle it differently?
+    }
 
-    ChassisSpeeds commandedSpeeds =
-        holonomic.calculate(
-            currentPose,
-            goal.poseMeters,
-            goal.velocityMetersPerSecond,
-            desiredHeading
-        );
+    // TODO: This loses the capability of Choreo to control the wheels optimally. See the choreo docs.
 
-    drivetrain.setDesiredState(commandedSpeeds);
+    ChassisSpeeds commandedSpeeds = swerveSample.get().getChassisSpeeds();
+    drivetrain.setDesiredState(commandedSpeeds);  
   }
 
   @Override
@@ -97,7 +100,8 @@ public class FollowPath extends Command {
   }
 
   @Override
-  public boolean isFinished() { // TODO: If precition is important we may need an end-state controller.
-    return timer.get() >= trajectory.getTotalTimeSeconds(); 
+  public boolean isFinished() {
+    // TODO: If precition is important we may need an end-state controller.
+    return timer.get() >= trajectory.getTotalTime(); // TODO: I assume total time is in seconds?
   }  
 }
