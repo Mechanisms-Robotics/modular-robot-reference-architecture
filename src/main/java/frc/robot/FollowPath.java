@@ -8,12 +8,11 @@ import edu.wpi.first.math.controller.HolonomicDriveController;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import frc.robot.PoseEstimator8736;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 
 public class FollowPath extends Command {
@@ -37,10 +36,10 @@ public class FollowPath extends Command {
     this.poseEstimator = poseEstimator;
     this.resetPose = resetPose;
 
-    var thetaProfile = new TrapezoidProfile.Constraints(
+    Constraints thetaProfile = new TrapezoidProfile.Constraints(
         CONSTANTS.MAX_ANGULAR_RAD_PER_SEC, CONSTANTS.MAX_ANGULAR_RAD_PER_SEC * 2);
 
-    var thetaController =
+    ProfiledPIDController thetaController =
         new ProfiledPIDController(CONSTANTS.PATH_FOLLOWER_P_THETA, 0, 0, thetaProfile);
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
 
