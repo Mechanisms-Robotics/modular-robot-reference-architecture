@@ -89,6 +89,8 @@ public class RobotContainer {
         this.poseEstimator,
         true
     );
+
+    System.out.println("*** Loaded Test Path autonomous ***");
   }
 
   public Command getAutonomousCommand() {

@@ -23,7 +23,7 @@ public class FollowPath extends Command {
   private final boolean resetPose;
 
   private final Timer timer = new Timer();
-  private final HolonomicDriveController holonomic;
+  private final HolonomicDriveController holonomicController;
   
   public FollowPath(
       Trajectory<SwerveSample> trajectory,
@@ -44,7 +44,7 @@ public class FollowPath extends Command {
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
 
     // TODO: Tune the controller.
-    holonomic = new HolonomicDriveController(
+    holonomicController = new HolonomicDriveController(
         new PIDController(CONSTANTS.PATH_FOLLOWER_P_X, 0, 0),
         new PIDController(CONSTANTS.PATH_FOLLOWER_P_Y, 0, 0),
         thetaController
@@ -63,16 +63,16 @@ public class FollowPath extends Command {
     timer.reset();
     timer.start();
 
-    if (resetPose) {
+    if (this.resetPose) {
       Optional<Pose2d> initialPose = trajectory.getInitialPose(false); // TODO: Should we mirror for red?
       if (initialPose.isEmpty()) {
         // TODO: Why would this ever happen? Should we handle it differently?
         throw new IllegalStateException("Trajectory has no initial pose!");
       }
-      drivetrain.setModulesToEncoders();
-      poseEstimator.initialize(
+      this.drivetrain.setModulesToEncoders();
+      this.poseEstimator.initialize(
           initialPose.get(),
-          drivetrain);
+          this.drivetrain);
     }
   }
 
