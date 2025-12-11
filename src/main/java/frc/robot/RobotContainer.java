@@ -8,6 +8,7 @@ import static frc.robot.CONSTANTS.*;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -18,14 +19,15 @@ import frc.robot.PoseEstimator8736;
 import frc.robot.subsystems.drivetrain.CTREModule;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.subsystems.drivetrain.DrivetrainController;
+import frc.robot.subsystems.drivetrain.GyroIORedux;
+import frc.robot.subsystems.drivetrain.GyroIOSim;
 import frc.robot.subsystems.drivetrain.SimModule;
 
 public class RobotContainer {
 
     private final Drivetrain drivetrain;
-    private final PoseEstimator8736 poseEstimator = new PoseEstimator8736();
-    private final DrivetrainController drivetrainController =
-        new DrivetrainController(poseEstimator);
+    private final PoseEstimator8736 poseEstimator;
+    private final DrivetrainController drivetrainController;
 
     private final CommandPS4Controller controller = new CommandPS4Controller(
         CONTROLLER_PORT
@@ -35,6 +37,7 @@ public class RobotContainer {
         // Not entriely happy with how this looks. But I do like passing in the IO
         // as this makes it easy to change hardware without chaning logic.
         if (RobotBase.isReal()) {
+            this.poseEstimator = new PoseEstimator8736(new GyroIORedux());
             this.drivetrain = new Drivetrain(
                 new CTREModule(
                     FRONT_LEFT_STEERING_CAN_ID,
@@ -58,13 +61,38 @@ public class RobotContainer {
                 )
             );
         } else {
+            // For simulation, we need to create the modules and kinematics first
+            // so the GyroIOSim can calculate yaw from module states
+            SimModule frontLeft = new SimModule();
+            SimModule frontRight = new SimModule();
+            SimModule backLeft = new SimModule();
+            SimModule backRight = new SimModule();
+
+            SwerveDriveKinematics simKinematics = new SwerveDriveKinematics(
+                FRONT_LEFT_MODULE_LOCATION,
+                FRONT_RIGHT_MODULE_LOCATION,
+                BACK_LEFT_MODULE_LOCATION,
+                BACK_RIGHT_MODULE_LOCATION
+            );
+
+            // Create a temporary drivetrain reference holder for the lambda
+            final Drivetrain[] drivetrainHolder = new Drivetrain[1];
+
             this.drivetrain = new Drivetrain(
-                new SimModule(),
-                new SimModule(),
-                new SimModule(),
-                new SimModule()
+                frontLeft,
+                frontRight,
+                backLeft,
+                backRight
+            );
+            drivetrainHolder[0] = this.drivetrain;
+
+            this.poseEstimator = new PoseEstimator8736(
+                new GyroIOSim(simKinematics, () ->
+                    drivetrainHolder[0].getModuleStates()
+                )
             );
         }
+        this.drivetrainController = new DrivetrainController(poseEstimator);
         this.poseEstimator.initialize(new Pose2d(), this.drivetrain);
         this.drivetrain.setPoseEstimator(this.poseEstimator);
         configureBindings();

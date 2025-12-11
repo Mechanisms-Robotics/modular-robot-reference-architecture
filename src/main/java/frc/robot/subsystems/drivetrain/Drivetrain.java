@@ -77,6 +77,15 @@ public class Drivetrain extends SubsystemBase {
         }
     }
 
+    public SwerveModuleState[] getModuleStates() {
+        return new SwerveModuleState[] {
+            this.modules[0].getState(),
+            this.modules[1].getState(),
+            this.modules[2].getState(),
+            this.modules[3].getState(),
+        };
+    }
+
     @Override
     public void periodic() {
         // Update module inputs and logging
