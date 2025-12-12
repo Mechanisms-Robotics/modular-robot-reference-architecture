@@ -20,6 +20,7 @@ import frc.robot.Constants.DriveConstants;
 import frc.robot.commands.DriveCommands;
 import frc.robot.subsystems.drivetrain.Drive;
 import frc.robot.subsystems.drivetrain.GyroIO;
+import frc.robot.subsystems.drivetrain.GyroIORedux;
 import frc.robot.subsystems.drivetrain.ModuleIO;
 import frc.robot.subsystems.drivetrain.ModuleIOSim;
 import frc.robot.subsystems.drivetrain.ModuleIOTalonFX;
@@ -51,7 +52,7 @@ public class RobotContainer {
                 // Real robot, instantiate hardware IO implementations
                 // ModuleIOTalonFX is intended for modules with TalonFX drive, TalonFX turn, and a CANcoder
                 drive = new Drive(
-                    new GyroIOPigeon2(),
+                    new GyroIORedux(),
                     new ModuleIOTalonFX(DriveConstants.FRONT_LEFT),
                     new ModuleIOTalonFX(DriveConstants.FRONT_RIGHT),
                     new ModuleIOTalonFX(DriveConstants.BACK_LEFT),

@@ -14,8 +14,12 @@ import com.ctre.phoenix6.configs.*;
 import com.ctre.phoenix6.signals.*;
 import com.ctre.phoenix6.swerve.*;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.*;
+import com.pathplanner.lib.config.ModuleConfig;
+import com.pathplanner.lib.config.RobotConfig;
+import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.*;
 import edu.wpi.first.wpilibj.RobotBase;
+import frc.robot.subsystems.drivetrain.Drive;
 
 /**
  * This class defines the runtime mode used by AdvantageKit. The mode is always "real" when running
@@ -282,6 +286,55 @@ public final class Constants {
             INVERT_RIGHT_SIDE,
             BACK_RIGHT_STEER_MOTOR_INVERTED,
             BACK_RIGHT_ENCODER_INVERTED
+        );
+
+        public static final double ODOMETRY_FREQUENCY = new CANBus(
+                DriveConstants.DRIVETRAIN_CONSTANTS.CANBusName
+            ).isNetworkFD()
+            ? 250.0
+            : 100.0;
+
+        public static final double DRIVE_BASE_RADIUS = Math.max(
+            Math.max(
+                Math.hypot(
+                    DriveConstants.FRONT_LEFT.LocationX,
+                    DriveConstants.FRONT_LEFT.LocationY
+                ),
+                Math.hypot(
+                    DriveConstants.FRONT_RIGHT.LocationX,
+                    DriveConstants.FRONT_RIGHT.LocationY
+                )
+            ),
+            Math.max(
+                Math.hypot(
+                    DriveConstants.BACK_LEFT.LocationX,
+                    DriveConstants.BACK_LEFT.LocationY
+                ),
+                Math.hypot(
+                    DriveConstants.BACK_RIGHT.LocationX,
+                    DriveConstants.BACK_RIGHT.LocationY
+                )
+            )
+        );
+
+        // PathPlanner config constants
+        public static final double ROBOT_MASS_KG = 74.088;
+        public static final double ROBOT_MOI = 6.883;
+        public static final double WHEEL_COF = 1.2;
+        public static final RobotConfig PLANER_CONFIG = new RobotConfig(
+            ROBOT_MASS_KG,
+            ROBOT_MOI,
+            new ModuleConfig(
+                DriveConstants.FRONT_LEFT.WheelRadius,
+                DriveConstants.SPEED_AT_12_VOLTS.in(MetersPerSecond),
+                WHEEL_COF,
+                DCMotor.getKrakenX60Foc(1).withReduction(
+                    DriveConstants.FRONT_LEFT.DriveMotorGearRatio
+                ),
+                DriveConstants.FRONT_LEFT.SlipCurrent,
+                1
+            ),
+            Drive.getModuleTranslations()
         );
     }
 }
