@@ -80,9 +80,9 @@ public class FollowPath extends Command {
 
   @Override
   public void execute() {
-    double t = timer.get();
+    double t = this.timer.get();
 
-    Optional<SwerveSample> swerveSample = trajectory.sampleAt(
+    Optional<SwerveSample> swerveSample = this.trajectory.sampleAt(
       t, false); // TODO: Should we mirror for red?
     if (swerveSample.isEmpty()) {
       return; // TODO: Why would this ever happen? Should we handle it differently?
@@ -105,18 +105,18 @@ public class FollowPath extends Command {
             swerveSample.get().getPose().getRotation()
         );
 
-    drivetrain.setDesiredState(commandedSpeeds);  
+    this.drivetrain.setDesiredState(commandedSpeeds);  
   }
 
   @Override
   public void end(boolean interrupted) {
-    drivetrain.setDesiredState(new ChassisSpeeds()); // TODO: There may be cases where we don't want the robot to stop!
-    timer.stop();
+    this.drivetrain.setDesiredState(new ChassisSpeeds()); // TODO: There may be cases where we don't want the robot to stop!
+    this.timer.stop();
   }
 
   @Override
   public boolean isFinished() {
     // TODO: If precition is important we may need an end-state controller.
-    return timer.get() >= trajectory.getTotalTime(); // TODO: I assume total time is in seconds?
+    return this.timer.get() >= this.trajectory.getTotalTime(); // TODO: I assume total time is in seconds?
   }  
 }
