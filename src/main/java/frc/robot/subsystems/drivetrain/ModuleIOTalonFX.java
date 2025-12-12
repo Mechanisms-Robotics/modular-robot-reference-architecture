@@ -1,13 +1,6 @@
-// Copyright (c) 2021-2025 Littleton Robotics
-// http://github.com/Mechanical-Advantage
-//
-// Use of this source code is governed by a BSD
-// license that can be found in the LICENSE file
-// at the root directory of this project.
-
 package frc.robot.subsystems.drivetrain;
 
-import static frc.robot.util.PhoenixUtil.*;
+import static frc.robot.util.PhoenixUtil.tryUntilOk;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -114,15 +107,15 @@ public class ModuleIOTalonFX implements ModuleIO {
         > constants
     ) {
         this.constants = constants;
-        driveTalon = new TalonFX(
+        this.driveTalon = new TalonFX(
             constants.DriveMotorId,
             DriveConstants.DRIVETRAIN_CONSTANTS.CANBusName
         );
-        turnTalon = new TalonFX(
+        this.turnTalon = new TalonFX(
             constants.SteerMotorId,
             DriveConstants.DRIVETRAIN_CONSTANTS.CANBusName
         );
-        cancoder = new CANcoder(
+        this.cancoder = new CANcoder(
             constants.EncoderId,
             DriveConstants.DRIVETRAIN_CONSTANTS.CANBusName
         );
@@ -143,9 +136,9 @@ public class ModuleIOTalonFX implements ModuleIO {
             ? InvertedValue.Clockwise_Positive
             : InvertedValue.CounterClockwise_Positive;
         tryUntilOk(5, () ->
-            driveTalon.getConfigurator().apply(driveConfig, 0.25)
+            this.driveTalon.getConfigurator().apply(driveConfig, 0.25)
         );
-        tryUntilOk(5, () -> driveTalon.setPosition(0.0, 0.25));
+        tryUntilOk(5, () -> this.driveTalon.setPosition(0.0, 0.25));
 
         // Configure turn motor
         var turnConfig = new TalonFXConfiguration();
@@ -175,7 +168,7 @@ public class ModuleIOTalonFX implements ModuleIO {
             ? InvertedValue.Clockwise_Positive
             : InvertedValue.CounterClockwise_Positive;
         tryUntilOk(5, () ->
-            turnTalon.getConfigurator().apply(turnConfig, 0.25)
+            this.turnTalon.getConfigurator().apply(turnConfig, 0.25)
         );
 
         // Configure CANCoder
@@ -184,125 +177,128 @@ public class ModuleIOTalonFX implements ModuleIO {
         cancoderConfig.MagnetSensor.SensorDirection = constants.EncoderInverted
             ? SensorDirectionValue.Clockwise_Positive
             : SensorDirectionValue.CounterClockwise_Positive;
-        cancoder.getConfigurator().apply(cancoderConfig);
+        this.cancoder.getConfigurator().apply(cancoderConfig);
 
         // Create timestamp queue
-        timestampQueue =
+        this.timestampQueue =
             PhoenixOdometryThread.getInstance().makeTimestampQueue();
 
         // Create drive status signals
-        drivePosition = driveTalon.getPosition();
-        drivePositionQueue = PhoenixOdometryThread.getInstance().registerSignal(
-            drivePosition.clone()
-        );
-        driveVelocity = driveTalon.getVelocity();
-        driveAppliedVolts = driveTalon.getMotorVoltage();
-        driveCurrent = driveTalon.getStatorCurrent();
+        this.drivePosition = this.driveTalon.getPosition();
+        this.drivePositionQueue =
+            PhoenixOdometryThread.getInstance().registerSignal(
+                this.drivePosition.clone()
+            );
+        this.driveVelocity = this.driveTalon.getVelocity();
+        this.driveAppliedVolts = this.driveTalon.getMotorVoltage();
+        this.driveCurrent = this.driveTalon.getStatorCurrent();
 
         // Create turn status signals
-        turnAbsolutePosition = cancoder.getAbsolutePosition();
-        turnPosition = turnTalon.getPosition();
-        turnPositionQueue = PhoenixOdometryThread.getInstance().registerSignal(
-            turnPosition.clone()
-        );
-        turnVelocity = turnTalon.getVelocity();
-        turnAppliedVolts = turnTalon.getMotorVoltage();
-        turnCurrent = turnTalon.getStatorCurrent();
+        this.turnAbsolutePosition = this.cancoder.getAbsolutePosition();
+        this.turnPosition = this.turnTalon.getPosition();
+        this.turnPositionQueue =
+            PhoenixOdometryThread.getInstance().registerSignal(
+                this.turnPosition.clone()
+            );
+        this.turnVelocity = this.turnTalon.getVelocity();
+        this.turnAppliedVolts = this.turnTalon.getMotorVoltage();
+        this.turnCurrent = this.turnTalon.getStatorCurrent();
 
         // Configure periodic frames
         BaseStatusSignal.setUpdateFrequencyForAll(
             DriveConstants.ODOMETRY_FREQUENCY,
-            drivePosition,
-            turnPosition
+            this.drivePosition,
+            this.turnPosition
         );
         BaseStatusSignal.setUpdateFrequencyForAll(
             50.0,
-            driveVelocity,
-            driveAppliedVolts,
-            driveCurrent,
-            turnAbsolutePosition,
-            turnVelocity,
-            turnAppliedVolts,
-            turnCurrent
+            this.driveVelocity,
+            this.driveAppliedVolts,
+            this.driveCurrent,
+            this.turnAbsolutePosition,
+            this.turnVelocity,
+            this.turnAppliedVolts,
+            this.turnCurrent
         );
-        ParentDevice.optimizeBusUtilizationForAll(driveTalon, turnTalon);
+        ParentDevice.optimizeBusUtilizationForAll(
+            this.driveTalon,
+            this.turnTalon
+        );
     }
 
     @Override
     public void updateInputs(ModuleIOInputs inputs) {
         // Refresh all signals
         var driveStatus = BaseStatusSignal.refreshAll(
-            drivePosition,
-            driveVelocity,
-            driveAppliedVolts,
-            driveCurrent
+            this.drivePosition,
+            this.driveVelocity,
+            this.driveAppliedVolts,
+            this.driveCurrent
         );
         var turnStatus = BaseStatusSignal.refreshAll(
-            turnPosition,
-            turnVelocity,
-            turnAppliedVolts,
-            turnCurrent
+            this.turnPosition,
+            this.turnVelocity,
+            this.turnAppliedVolts,
+            this.turnCurrent
         );
         var turnEncoderStatus = BaseStatusSignal.refreshAll(
-            turnAbsolutePosition
+            this.turnAbsolutePosition
         );
 
         // Update drive inputs
-        inputs.driveConnected = driveConnectedDebounce.calculate(
+        inputs.driveConnected = this.driveConnectedDebounce.calculate(
             driveStatus.isOK()
         );
         inputs.drivePositionRad = Units.rotationsToRadians(
-            drivePosition.getValueAsDouble()
+            this.drivePosition.getValueAsDouble()
         );
         inputs.driveVelocityRadPerSec = Units.rotationsToRadians(
-            driveVelocity.getValueAsDouble()
+            this.driveVelocity.getValueAsDouble()
         );
-        inputs.driveAppliedVolts = driveAppliedVolts.getValueAsDouble();
-        inputs.driveCurrentAmps = driveCurrent.getValueAsDouble();
+        inputs.driveAppliedVolts = this.driveAppliedVolts.getValueAsDouble();
+        inputs.driveCurrentAmps = this.driveCurrent.getValueAsDouble();
 
         // Update turn inputs
-        inputs.turnConnected = turnConnectedDebounce.calculate(
+        inputs.turnConnected = this.turnConnectedDebounce.calculate(
             turnStatus.isOK()
         );
-        inputs.turnEncoderConnected = turnEncoderConnectedDebounce.calculate(
-            turnEncoderStatus.isOK()
-        );
+        inputs.turnEncoderConnected =
+            this.turnEncoderConnectedDebounce.calculate(
+                turnEncoderStatus.isOK()
+            );
         inputs.turnAbsolutePosition = Rotation2d.fromRotations(
-            turnAbsolutePosition.getValueAsDouble()
+            this.turnAbsolutePosition.getValueAsDouble()
         );
         inputs.turnPosition = Rotation2d.fromRotations(
-            turnPosition.getValueAsDouble()
+            this.turnPosition.getValueAsDouble()
         );
         inputs.turnVelocityRadPerSec = Units.rotationsToRadians(
-            turnVelocity.getValueAsDouble()
+            this.turnVelocity.getValueAsDouble()
         );
-        inputs.turnAppliedVolts = turnAppliedVolts.getValueAsDouble();
-        inputs.turnCurrentAmps = turnCurrent.getValueAsDouble();
+        inputs.turnAppliedVolts = this.turnAppliedVolts.getValueAsDouble();
+        inputs.turnCurrentAmps = this.turnCurrent.getValueAsDouble();
 
         // Update odometry inputs
-        inputs.odometryTimestamps = timestampQueue
-            .stream()
+        inputs.odometryTimestamps = this.timestampQueue.stream()
             .mapToDouble((Double value) -> value)
             .toArray();
-        inputs.odometryDrivePositionsRad = drivePositionQueue
-            .stream()
+        inputs.odometryDrivePositionsRad = this.drivePositionQueue.stream()
             .mapToDouble((Double value) -> Units.rotationsToRadians(value))
             .toArray();
-        inputs.odometryTurnPositions = turnPositionQueue
-            .stream()
+        inputs.odometryTurnPositions = this.turnPositionQueue.stream()
             .map((Double value) -> Rotation2d.fromRotations(value))
             .toArray(Rotation2d[]::new);
-        timestampQueue.clear();
-        drivePositionQueue.clear();
-        turnPositionQueue.clear();
+        this.timestampQueue.clear();
+        this.drivePositionQueue.clear();
+        this.turnPositionQueue.clear();
     }
 
     @Override
     public void setDriveOpenLoop(double output) {
-        driveTalon.setControl(
-            switch (constants.DriveMotorClosedLoopOutput) {
-                case Voltage -> voltageRequest.withOutput(output);
-                case TorqueCurrentFOC -> torqueCurrentRequest.withOutput(
+        this.driveTalon.setControl(
+            switch (this.constants.DriveMotorClosedLoopOutput) {
+                case Voltage -> this.voltageRequest.withOutput(output);
+                case TorqueCurrentFOC -> this.torqueCurrentRequest.withOutput(
                     output
                 );
             }
@@ -311,10 +307,10 @@ public class ModuleIOTalonFX implements ModuleIO {
 
     @Override
     public void setTurnOpenLoop(double output) {
-        turnTalon.setControl(
-            switch (constants.SteerMotorClosedLoopOutput) {
-                case Voltage -> voltageRequest.withOutput(output);
-                case TorqueCurrentFOC -> torqueCurrentRequest.withOutput(
+        this.turnTalon.setControl(
+            switch (this.constants.SteerMotorClosedLoopOutput) {
+                case Voltage -> this.voltageRequest.withOutput(output);
+                case TorqueCurrentFOC -> this.torqueCurrentRequest.withOutput(
                     output
                 );
             }
@@ -324,12 +320,12 @@ public class ModuleIOTalonFX implements ModuleIO {
     @Override
     public void setDriveVelocity(double velocityRadPerSec) {
         double velocityRotPerSec = Units.radiansToRotations(velocityRadPerSec);
-        driveTalon.setControl(
-            switch (constants.DriveMotorClosedLoopOutput) {
-                case Voltage -> velocityVoltageRequest.withVelocity(
+        this.driveTalon.setControl(
+            switch (this.constants.DriveMotorClosedLoopOutput) {
+                case Voltage -> this.velocityVoltageRequest.withVelocity(
                     velocityRotPerSec
                 );
-                case TorqueCurrentFOC -> velocityTorqueCurrentRequest.withVelocity(
+                case TorqueCurrentFOC -> this.velocityTorqueCurrentRequest.withVelocity(
                     velocityRotPerSec
                 );
             }
@@ -338,12 +334,12 @@ public class ModuleIOTalonFX implements ModuleIO {
 
     @Override
     public void setTurnPosition(Rotation2d rotation) {
-        turnTalon.setControl(
-            switch (constants.SteerMotorClosedLoopOutput) {
-                case Voltage -> positionVoltageRequest.withPosition(
+        this.turnTalon.setControl(
+            switch (this.constants.SteerMotorClosedLoopOutput) {
+                case Voltage -> this.positionVoltageRequest.withPosition(
                     rotation.getRotations()
                 );
-                case TorqueCurrentFOC -> positionTorqueCurrentRequest.withPosition(
+                case TorqueCurrentFOC -> this.positionTorqueCurrentRequest.withPosition(
                     rotation.getRotations()
                 );
             }

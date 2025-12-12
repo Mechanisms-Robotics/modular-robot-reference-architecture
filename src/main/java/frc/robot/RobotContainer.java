@@ -44,7 +44,7 @@ public class RobotContainer {
             case REAL:
                 // Real robot, instantiate hardware IO implementations
                 // ModuleIOTalonFX is intended for modules with TalonFX drive, TalonFX turn, and a CANcoder
-                drive = new Drive(
+                this.drive = new Drive(
                     new GyroIORedux(),
                     new ModuleIOTalonFX(DriveConstants.FRONT_LEFT),
                     new ModuleIOTalonFX(DriveConstants.FRONT_RIGHT),
@@ -54,7 +54,7 @@ public class RobotContainer {
                 break;
             case SIM:
                 // Sim robot, instantiate physics sim IO implementations
-                drive = new Drive(
+                this.drive = new Drive(
                     new GyroIO() {}, // Gryo is simulated via kinematics
                     new ModuleIOSim(DriveConstants.FRONT_LEFT),
                     new ModuleIOSim(DriveConstants.FRONT_RIGHT),
@@ -64,7 +64,7 @@ public class RobotContainer {
                 break;
             default:
                 // Replayed robot, disable IO implementations
-                drive = new Drive(
+                this.drive = new Drive(
                     new GyroIO() {},
                     new ModuleIO() {},
                     new ModuleIO() {},
@@ -75,35 +75,35 @@ public class RobotContainer {
         }
 
         // Set up auto routines
-        autoChooser = new LoggedDashboardChooser<>(
+        this.autoChooser = new LoggedDashboardChooser<>(
             "Auto Choices",
             AutoBuilder.buildAutoChooser()
         );
 
         // Set up SysId routines
-        autoChooser.addOption(
+        this.autoChooser.addOption(
             "Drive Wheel Radius Characterization",
-            DriveController.wheelRadiusCharacterization(drive)
+            DriveController.wheelRadiusCharacterization(this.drive)
         );
-        autoChooser.addOption(
+        this.autoChooser.addOption(
             "Drive Simple FF Characterization",
-            DriveController.feedforwardCharacterization(drive)
+            DriveController.feedforwardCharacterization(this.drive)
         );
-        autoChooser.addOption(
+        this.autoChooser.addOption(
             "Drive SysId (Quasistatic Forward)",
-            drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward)
+            this.drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward)
         );
-        autoChooser.addOption(
+        this.autoChooser.addOption(
             "Drive SysId (Quasistatic Reverse)",
-            drive.sysIdQuasistatic(SysIdRoutine.Direction.kReverse)
+            this.drive.sysIdQuasistatic(SysIdRoutine.Direction.kReverse)
         );
-        autoChooser.addOption(
+        this.autoChooser.addOption(
             "Drive SysId (Dynamic Forward)",
-            drive.sysIdDynamic(SysIdRoutine.Direction.kForward)
+            this.drive.sysIdDynamic(SysIdRoutine.Direction.kForward)
         );
-        autoChooser.addOption(
+        this.autoChooser.addOption(
             "Drive SysId (Dynamic Reverse)",
-            drive.sysIdDynamic(SysIdRoutine.Direction.kReverse)
+            this.drive.sysIdDynamic(SysIdRoutine.Direction.kReverse)
         );
 
         // Configure the button bindings
@@ -118,45 +118,43 @@ public class RobotContainer {
      */
     private void configureButtonBindings() {
         // Default command, normal field-relative drive
-        drive.setDefaultCommand(
+        this.drive.setDefaultCommand(
             DriveController.joystickDrive(
-                drive,
-                () -> -controller.getLeftY(),
-                () -> -controller.getLeftX(),
-                () -> -controller.getRightX()
+                this.drive,
+                () -> -this.controller.getLeftY(),
+                () -> -this.controller.getLeftX(),
+                () -> -this.controller.getRightX()
             )
         );
 
-        // Lock to 0° when A button is held
-        controller
-            .a()
-            .whileTrue(
-                DriveController.joystickDriveAtAngle(
-                    drive,
-                    () -> -controller.getLeftY(),
-                    () -> -controller.getLeftX(),
-                    () -> Rotation2d.kZero
-                )
-            );
+        // Lock to 0 degrees when A button is held
+        this.controller.a().whileTrue(
+            DriveController.joystickDriveAtAngle(
+                this.drive,
+                () -> -this.controller.getLeftY(),
+                () -> -this.controller.getLeftX(),
+                () -> Rotation2d.kZero
+            )
+        );
 
         // Switch to X pattern when X button is pressed
-        controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+        this.controller.x().onTrue(
+            Commands.runOnce(this.drive::stopWithX, this.drive)
+        );
 
-        // Reset gyro to 0° when B button is pressed
-        controller
-            .b()
-            .onTrue(
-                Commands.runOnce(
-                    () ->
-                        drive.setPose(
-                            new Pose2d(
-                                drive.getPose().getTranslation(),
-                                Rotation2d.kZero
-                            )
-                        ),
-                    drive
-                ).ignoringDisable(true)
-            );
+        // Reset gyro to 0 degrees when B button is pressed
+        this.controller.b().onTrue(
+            Commands.runOnce(
+                () ->
+                    this.drive.setPose(
+                        new Pose2d(
+                            this.drive.getPose().getTranslation(),
+                            Rotation2d.kZero
+                        )
+                    ),
+                this.drive
+            ).ignoringDisable(true)
+        );
     }
 
     /**
@@ -165,6 +163,6 @@ public class RobotContainer {
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        return autoChooser.get();
+        return this.autoChooser.get();
     }
 }

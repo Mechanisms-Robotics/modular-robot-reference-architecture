@@ -1,6 +1,7 @@
 package frc.robot.subsystems.drivetrain;
 
-import static edu.wpi.first.units.Units.*;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Volts;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
@@ -64,10 +65,10 @@ public class Drive extends SubsystemBase {
         ModuleIO brModuleIO
     ) {
         this.gyroIO = gyroIO;
-        modules[0] = new Module(flModuleIO, 0, DriveConstants.FRONT_LEFT);
-        modules[1] = new Module(frModuleIO, 1, DriveConstants.FRONT_RIGHT);
-        modules[2] = new Module(blModuleIO, 2, DriveConstants.BACK_LEFT);
-        modules[3] = new Module(brModuleIO, 3, DriveConstants.BACK_RIGHT);
+        this.modules[0] = new Module(flModuleIO, 0, DriveConstants.FRONT_LEFT);
+        this.modules[1] = new Module(frModuleIO, 1, DriveConstants.FRONT_RIGHT);
+        this.modules[2] = new Module(blModuleIO, 2, DriveConstants.BACK_LEFT);
+        this.modules[3] = new Module(brModuleIO, 3, DriveConstants.BACK_RIGHT);
 
         // Start odometry thread
         PhoenixOdometryThread.getInstance().start();
@@ -100,7 +101,7 @@ public class Drive extends SubsystemBase {
         });
 
         // Configure SysId
-        sysId = new SysIdRoutine(
+        this.sysId = new SysIdRoutine(
             new SysIdRoutine.Config(null, null, null, state ->
                 Logger.recordOutput("Drive/SysIdState", state.toString())
             ),
@@ -115,16 +116,16 @@ public class Drive extends SubsystemBase {
     @Override
     public void periodic() {
         odometryLock.lock(); // Prevents odometry updates while reading data
-        gyroIO.updateInputs(gyroInputs);
-        Logger.processInputs("Drive/Gyro", gyroInputs);
-        for (var module : modules) {
+        this.gyroIO.updateInputs(this.gyroInputs);
+        Logger.processInputs("Drive/Gyro", this.gyroInputs);
+        for (var module : this.modules) {
             module.periodic();
         }
         odometryLock.unlock();
 
         // Stop moving when disabled
         if (DriverStation.isDisabled()) {
-            for (var module : modules) {
+            for (var module : this.modules) {
                 module.stop();
             }
         }
@@ -142,7 +143,7 @@ public class Drive extends SubsystemBase {
         }
 
         // Update odometry
-        double[] sampleTimestamps = modules[0].getOdometryTimestamps(); // All signals are sampled together
+        double[] sampleTimestamps = this.modules[0].getOdometryTimestamps(); // All signals are sampled together
         int sampleCount = sampleTimestamps.length;
         for (int i = 0; i < sampleCount; i++) {
             // Read wheel positions from each module
@@ -150,14 +151,14 @@ public class Drive extends SubsystemBase {
                 new SwerveModulePosition[4];
             for (int moduleIndex = 0; moduleIndex < 4; moduleIndex++) {
                 modulePositions[moduleIndex] =
-                    modules[moduleIndex].getOdometryPositions()[i];
+                    this.modules[moduleIndex].getOdometryPositions()[i];
             }
 
             // Update pose estimator with gyro rotation (or null to use kinematics)
-            Rotation2d gyroRotation = gyroInputs.connected
-                ? gyroInputs.odometryYawPositions[i]
+            Rotation2d gyroRotation = this.gyroInputs.connected
+                ? this.gyroInputs.odometryYawPositions[i]
                 : null;
-            poseEstimator.updateOdometry(
+            this.poseEstimator.updateOdometry(
                 modulePositions,
                 gyroRotation,
                 sampleTimestamps[i]
@@ -165,8 +166,8 @@ public class Drive extends SubsystemBase {
         }
 
         // Update gyro alert
-        gyroDisconnectedAlert.set(
-            !gyroInputs.connected && Constants.CURRENT_MODE != Mode.SIM
+        this.gyroDisconnectedAlert.set(
+            !this.gyroInputs.connected && Constants.CURRENT_MODE != Mode.SIM
         );
     }
 
@@ -178,9 +179,8 @@ public class Drive extends SubsystemBase {
     public void runVelocity(ChassisSpeeds speeds) {
         // Calculate module setpoints
         ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
-        SwerveModuleState[] setpointStates = kinematics.toSwerveModuleStates(
-            discreteSpeeds
-        );
+        SwerveModuleState[] setpointStates =
+            this.kinematics.toSwerveModuleStates(discreteSpeeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(
             setpointStates,
             DriveConstants.SPEED_AT_12_VOLTS
@@ -192,7 +192,7 @@ public class Drive extends SubsystemBase {
 
         // Send setpoints to modules
         for (int i = 0; i < 4; i++) {
-            modules[i].runSetpoint(setpointStates[i]);
+            this.modules[i].runSetpoint(setpointStates[i]);
         }
 
         // Log optimized setpoints (runSetpoint mutates each state)
@@ -202,7 +202,7 @@ public class Drive extends SubsystemBase {
     /** Runs the drive in a straight line with the specified drive output. */
     public void runCharacterization(double output) {
         for (int i = 0; i < 4; i++) {
-            modules[i].runCharacterization(output);
+            this.modules[i].runCharacterization(output);
         }
     }
 
@@ -220,7 +220,7 @@ public class Drive extends SubsystemBase {
         for (int i = 0; i < 4; i++) {
             headings[i] = getModuleTranslations()[i].getAngle();
         }
-        kinematics.resetHeadings(headings);
+        this.kinematics.resetHeadings(headings);
         stop();
     }
 
@@ -228,14 +228,14 @@ public class Drive extends SubsystemBase {
     public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
         return run(() -> runCharacterization(0.0))
             .withTimeout(1.0)
-            .andThen(sysId.quasistatic(direction));
+            .andThen(this.sysId.quasistatic(direction));
     }
 
     /** Returns a command to run a dynamic test in the specified direction. */
     public Command sysIdDynamic(SysIdRoutine.Direction direction) {
         return run(() -> runCharacterization(0.0))
             .withTimeout(1.0)
-            .andThen(sysId.dynamic(direction));
+            .andThen(this.sysId.dynamic(direction));
     }
 
     /** Returns the module states (turn angles and drive velocities) for all of the modules. */
@@ -243,7 +243,7 @@ public class Drive extends SubsystemBase {
     private SwerveModuleState[] getModuleStates() {
         SwerveModuleState[] states = new SwerveModuleState[4];
         for (int i = 0; i < 4; i++) {
-            states[i] = modules[i].getState();
+            states[i] = this.modules[i].getState();
         }
         return states;
     }
@@ -252,7 +252,7 @@ public class Drive extends SubsystemBase {
     private SwerveModulePosition[] getModulePositions() {
         SwerveModulePosition[] states = new SwerveModulePosition[4];
         for (int i = 0; i < 4; i++) {
-            states[i] = modules[i].getPosition();
+            states[i] = this.modules[i].getPosition();
         }
         return states;
     }
@@ -260,14 +260,15 @@ public class Drive extends SubsystemBase {
     /** Returns the measured chassis speeds of the robot. */
     @AutoLogOutput(key = "SwerveChassisSpeeds/Measured")
     private ChassisSpeeds getChassisSpeeds() {
-        return kinematics.toChassisSpeeds(getModuleStates());
+        return this.kinematics.toChassisSpeeds(getModuleStates());
     }
 
     /** Returns the position of each module in radians. */
     public double[] getWheelRadiusCharacterizationPositions() {
         double[] values = new double[4];
         for (int i = 0; i < 4; i++) {
-            values[i] = modules[i].getWheelRadiusCharacterizationPosition();
+            values[i] =
+                this.modules[i].getWheelRadiusCharacterizationPosition();
         }
         return values;
     }
@@ -276,7 +277,7 @@ public class Drive extends SubsystemBase {
     public double getFFCharacterizationVelocity() {
         double output = 0.0;
         for (int i = 0; i < 4; i++) {
-            output += modules[i].getFFCharacterizationVelocity() / 4.0;
+            output += this.modules[i].getFFCharacterizationVelocity() / 4.0;
         }
         return output;
     }
@@ -284,7 +285,7 @@ public class Drive extends SubsystemBase {
     /** Returns the current odometry pose. */
     @AutoLogOutput(key = "Odometry/Robot")
     public Pose2d getPose() {
-        return poseEstimator.getEstimatedPose();
+        return this.poseEstimator.getEstimatedPose();
     }
 
     /** Returns the current odometry rotation. */
@@ -294,7 +295,7 @@ public class Drive extends SubsystemBase {
 
     /** Resets the current odometry pose. */
     public void setPose(Pose2d pose) {
-        poseEstimator.resetPose(pose, getModulePositions());
+        this.poseEstimator.resetPose(pose, getModulePositions());
     }
 
     /** Adds a new timestamped vision measurement. */
@@ -303,7 +304,7 @@ public class Drive extends SubsystemBase {
         double timestampSeconds,
         Matrix<N3, N1> visionMeasurementStdDevs
     ) {
-        poseEstimator.addVisionMeasurement(
+        this.poseEstimator.addVisionMeasurement(
             visionRobotPoseMeters,
             timestampSeconds,
             visionMeasurementStdDevs
