@@ -1,5 +1,7 @@
 package frc.robot;
 
+import static frc.robot.CONSTANTS.PATH_FOLLOWER_P_THETA;
+
 import java.util.Optional;
 
 import choreo.trajectory.SwerveSample;
@@ -88,7 +90,21 @@ public class FollowPath extends Command {
 
     // TODO: This loses the capability of Choreo to control the wheels optimally. See the choreo docs.
 
-    ChassisSpeeds commandedSpeeds = swerveSample.get().getChassisSpeeds();
+    // See https://docs.wpilib.org/en/stable/docs/software/advanced-controls/trajectories/holonomic.html
+
+    ChassisSpeeds sampleSpeeds = swerveSample.get().getChassisSpeeds();
+    double desiredLinearVelocity = Math.sqrt(
+        sampleSpeeds.vxMetersPerSecond * sampleSpeeds.vxMetersPerSecond +
+        sampleSpeeds.vyMetersPerSecond * sampleSpeeds.vyMetersPerSecond);
+
+    ChassisSpeeds commandedSpeeds =
+        this.holonomicController.calculate(
+            this.poseEstimator.getPose(),
+            swerveSample.get().getPose(),
+            desiredLinearVelocity,
+            swerveSample.get().getPose().getRotation()
+        );
+
     drivetrain.setDesiredState(commandedSpeeds);  
   }
 
