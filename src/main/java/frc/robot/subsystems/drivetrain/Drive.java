@@ -29,8 +29,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
+import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.Mode;
-import frc.robot.generated.TunerConstants;
 import frc.robot.util.LocalADStarAK;
 import frc.robot.util.PoseEstimator;
 import java.util.concurrent.locks.Lock;
@@ -42,29 +42,29 @@ public class Drive extends SubsystemBase {
 
     // TunerConstants doesn't include these constants, so they are declared locally
     static final double ODOMETRY_FREQUENCY = new CANBus(
-            TunerConstants.DrivetrainConstants.CANBusName
+            DriveConstants.DRIVETRAIN_CONSTANTS.CANBusName
         ).isNetworkFD()
         ? 250.0
         : 100.0;
     public static final double DRIVE_BASE_RADIUS = Math.max(
         Math.max(
             Math.hypot(
-                TunerConstants.FrontLeft.LocationX,
-                TunerConstants.FrontLeft.LocationY
+                DriveConstants.FRONT_LEFT.LocationX,
+                DriveConstants.FRONT_LEFT.LocationY
             ),
             Math.hypot(
-                TunerConstants.FrontRight.LocationX,
-                TunerConstants.FrontRight.LocationY
+                DriveConstants.FRONT_RIGHT.LocationX,
+                DriveConstants.FRONT_RIGHT.LocationY
             )
         ),
         Math.max(
             Math.hypot(
-                TunerConstants.BackLeft.LocationX,
-                TunerConstants.BackLeft.LocationY
+                DriveConstants.BACK_LEFT.LocationX,
+                DriveConstants.BACK_LEFT.LocationY
             ),
             Math.hypot(
-                TunerConstants.BackRight.LocationX,
-                TunerConstants.BackRight.LocationY
+                DriveConstants.BACK_RIGHT.LocationX,
+                DriveConstants.BACK_RIGHT.LocationY
             )
         )
     );
@@ -77,13 +77,13 @@ public class Drive extends SubsystemBase {
         ROBOT_MASS_KG,
         ROBOT_MOI,
         new ModuleConfig(
-            TunerConstants.FrontLeft.WheelRadius,
-            TunerConstants.kSpeedAt12Volts.in(MetersPerSecond),
+            DriveConstants.FRONT_LEFT.WheelRadius,
+            DriveConstants.SPEED_AT_12_VOLTS.in(MetersPerSecond),
             WHEEL_COF,
             DCMotor.getKrakenX60Foc(1).withReduction(
-                TunerConstants.FrontLeft.DriveMotorGearRatio
+                DriveConstants.FRONT_LEFT.DriveMotorGearRatio
             ),
-            TunerConstants.FrontLeft.SlipCurrent,
+            DriveConstants.FRONT_LEFT.SlipCurrent,
             1
         ),
         getModuleTranslations()
@@ -117,10 +117,10 @@ public class Drive extends SubsystemBase {
         ModuleIO brModuleIO
     ) {
         this.gyroIO = gyroIO;
-        modules[0] = new Module(flModuleIO, 0, TunerConstants.FrontLeft);
-        modules[1] = new Module(frModuleIO, 1, TunerConstants.FrontRight);
-        modules[2] = new Module(blModuleIO, 2, TunerConstants.BackLeft);
-        modules[3] = new Module(brModuleIO, 3, TunerConstants.BackRight);
+        modules[0] = new Module(flModuleIO, 0, DriveConstants.FRONT_LEFT);
+        modules[1] = new Module(frModuleIO, 1, DriveConstants.FRONT_RIGHT);
+        modules[2] = new Module(blModuleIO, 2, DriveConstants.BACK_LEFT);
+        modules[3] = new Module(brModuleIO, 3, DriveConstants.BACK_RIGHT);
 
         // Start odometry thread
         PhoenixOdometryThread.getInstance().start();
@@ -219,7 +219,7 @@ public class Drive extends SubsystemBase {
 
         // Update gyro alert
         gyroDisconnectedAlert.set(
-            !gyroInputs.connected && Constants.currentMode != Mode.SIM
+            !gyroInputs.connected && Constants.CURRENT_MODE != Mode.SIM
         );
     }
 
@@ -236,7 +236,7 @@ public class Drive extends SubsystemBase {
         );
         SwerveDriveKinematics.desaturateWheelSpeeds(
             setpointStates,
-            TunerConstants.kSpeedAt12Volts
+            DriveConstants.SPEED_AT_12_VOLTS
         );
 
         // Log unoptimized setpoints and setpoint speeds
@@ -365,7 +365,7 @@ public class Drive extends SubsystemBase {
 
     /** Returns the maximum linear speed in meters per sec. */
     public double getMaxLinearSpeedMetersPerSec() {
-        return TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
+        return DriveConstants.SPEED_AT_12_VOLTS.in(MetersPerSecond);
     }
 
     /** Returns the maximum angular speed in radians per sec. */
@@ -377,20 +377,20 @@ public class Drive extends SubsystemBase {
     public static Translation2d[] getModuleTranslations() {
         return new Translation2d[] {
             new Translation2d(
-                TunerConstants.FrontLeft.LocationX,
-                TunerConstants.FrontLeft.LocationY
+                DriveConstants.FRONT_LEFT.LocationX,
+                DriveConstants.FRONT_LEFT.LocationY
             ),
             new Translation2d(
-                TunerConstants.FrontRight.LocationX,
-                TunerConstants.FrontRight.LocationY
+                DriveConstants.FRONT_RIGHT.LocationX,
+                DriveConstants.FRONT_RIGHT.LocationY
             ),
             new Translation2d(
-                TunerConstants.BackLeft.LocationX,
-                TunerConstants.BackLeft.LocationY
+                DriveConstants.BACK_LEFT.LocationX,
+                DriveConstants.BACK_LEFT.LocationY
             ),
             new Translation2d(
-                TunerConstants.BackRight.LocationX,
-                TunerConstants.BackRight.LocationY
+                DriveConstants.BACK_RIGHT.LocationX,
+                DriveConstants.BACK_RIGHT.LocationY
             ),
         };
     }
