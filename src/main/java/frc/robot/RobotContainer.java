@@ -1,10 +1,3 @@
-// Copyright (c) 2021-2025 Littleton Robotics
-// http://github.com/Mechanical-Advantage
-//
-// Use of this source code is governed by a BSD
-// license that can be found in the LICENSE file
-// at the root directory of this project.
-
 package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -17,7 +10,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.DriveConstants;
-import frc.robot.commands.DriveCommands;
+import frc.robot.controllers.DriveController;
 import frc.robot.subsystems.drivetrain.Drive;
 import frc.robot.subsystems.drivetrain.GyroIO;
 import frc.robot.subsystems.drivetrain.GyroIORedux;
@@ -90,11 +83,11 @@ public class RobotContainer {
         // Set up SysId routines
         autoChooser.addOption(
             "Drive Wheel Radius Characterization",
-            DriveCommands.wheelRadiusCharacterization(drive)
+            DriveController.wheelRadiusCharacterization(drive)
         );
         autoChooser.addOption(
             "Drive Simple FF Characterization",
-            DriveCommands.feedforwardCharacterization(drive)
+            DriveController.feedforwardCharacterization(drive)
         );
         autoChooser.addOption(
             "Drive SysId (Quasistatic Forward)",
@@ -126,7 +119,7 @@ public class RobotContainer {
     private void configureButtonBindings() {
         // Default command, normal field-relative drive
         drive.setDefaultCommand(
-            DriveCommands.joystickDrive(
+            DriveController.joystickDrive(
                 drive,
                 () -> -controller.getLeftY(),
                 () -> -controller.getLeftX(),
@@ -138,7 +131,7 @@ public class RobotContainer {
         controller
             .a()
             .whileTrue(
-                DriveCommands.joystickDriveAtAngle(
+                DriveController.joystickDriveAtAngle(
                     drive,
                     () -> -controller.getLeftY(),
                     () -> -controller.getLeftX(),

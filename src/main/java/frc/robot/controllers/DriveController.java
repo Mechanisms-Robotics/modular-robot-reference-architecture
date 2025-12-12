@@ -1,11 +1,4 @@
-// Copyright (c) 2021-2025 Littleton Robotics
-// http://github.com/Mechanical-Advantage
-//
-// Use of this source code is governed by a BSD
-// license that can be found in the LICENSE file
-// at the root directory of this project.
-
-package frc.robot.commands;
+package frc.robot.controllers;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ProfiledPIDController;
@@ -31,19 +24,9 @@ import java.util.List;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
-public class DriveCommands {
+public class DriveController {
 
-    private static final double DEADBAND = 0.1;
-    private static final double ANGLE_KP = 5.0;
-    private static final double ANGLE_KD = 0.4;
-    private static final double ANGLE_MAX_VELOCITY = 8.0;
-    private static final double ANGLE_MAX_ACCELERATION = 20.0;
-    private static final double FF_START_DELAY = 2.0; // Secs
-    private static final double FF_RAMP_RATE = 0.1; // Volts/Sec
-    private static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
-    private static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
-
-    private DriveCommands() {}
+    private DriveController() {}
 
     private static Translation2d getLinearVelocityFromJoysticks(
         double x,
@@ -52,7 +35,7 @@ public class DriveCommands {
         // Apply deadband
         double linearMagnitude = MathUtil.applyDeadband(
             Math.hypot(x, y),
-            DEADBAND
+            DriveConstants.DEADBAND
         );
         Rotation2d linearDirection = new Rotation2d(Math.atan2(y, x));
 
@@ -87,7 +70,7 @@ public class DriveCommands {
                 // Apply rotation deadband
                 double omega = MathUtil.applyDeadband(
                     omegaSupplier.getAsDouble(),
-                    DEADBAND
+                    DriveConstants.DEADBAND
                 );
 
                 // Square rotation value for more precise control
@@ -130,12 +113,12 @@ public class DriveCommands {
     ) {
         // Create PID controller
         ProfiledPIDController angleController = new ProfiledPIDController(
-            ANGLE_KP,
+            DriveConstants.ANGLE_KP,
             0.0,
-            ANGLE_KD,
+            DriveConstants.ANGLE_KD,
             new TrapezoidProfile.Constraints(
-                ANGLE_MAX_VELOCITY,
-                ANGLE_MAX_ACCELERATION
+                DriveConstants.ANGLE_MAX_VELOCITY,
+                DriveConstants.ANGLE_MAX_ACCELERATION
             )
         );
         angleController.enableContinuousInput(-Math.PI, Math.PI);
@@ -205,13 +188,13 @@ public class DriveCommands {
                     drive.runCharacterization(0.0);
                 },
                 drive
-            ).withTimeout(FF_START_DELAY),
+            ).withTimeout(DriveConstants.FF_START_DELAY),
             // Start timer
             Commands.runOnce(timer::restart),
             // Accelerate and gather data
             Commands.run(
                 () -> {
-                    double voltage = timer.get() * FF_RAMP_RATE;
+                    double voltage = timer.get() * DriveConstants.FF_RAMP_RATE;
                     drive.runCharacterization(voltage);
                     velocitySamples.add(drive.getFFCharacterizationVelocity());
                     voltageSamples.add(voltage);
@@ -250,7 +233,9 @@ public class DriveCommands {
 
     /** Measures the robot's wheel radius by spinning in a circle. */
     public static Command wheelRadiusCharacterization(Drive drive) {
-        SlewRateLimiter limiter = new SlewRateLimiter(WHEEL_RADIUS_RAMP_RATE);
+        SlewRateLimiter limiter = new SlewRateLimiter(
+            DriveConstants.WHEEL_RADIUS_RAMP_RATE
+        );
         WheelRadiusCharacterizationState state =
             new WheelRadiusCharacterizationState();
 
@@ -265,7 +250,7 @@ public class DriveCommands {
                 Commands.run(
                     () -> {
                         double speed = limiter.calculate(
-                            WHEEL_RADIUS_MAX_VELOCITY
+                            DriveConstants.WHEEL_RADIUS_MAX_VELOCITY
                         );
                         drive.runVelocity(new ChassisSpeeds(0.0, 0.0, speed));
                     },
