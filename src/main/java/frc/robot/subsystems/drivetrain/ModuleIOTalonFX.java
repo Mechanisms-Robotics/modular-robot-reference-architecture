@@ -28,6 +28,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants.Timeouts;
 import java.util.Queue;
 
 /**
@@ -87,15 +88,15 @@ public class ModuleIOTalonFX implements ModuleIO {
 
     // Connection debouncers
     private final Debouncer driveConnectedDebounce = new Debouncer(
-        0.5,
+        Timeouts.STD_DEBOUNCE_TIME,
         Debouncer.DebounceType.kFalling
     );
     private final Debouncer turnConnectedDebounce = new Debouncer(
-        0.5,
+        Timeouts.STD_DEBOUNCE_TIME,
         Debouncer.DebounceType.kFalling
     );
     private final Debouncer turnEncoderConnectedDebounce = new Debouncer(
-        0.5,
+        Timeouts.STD_DEBOUNCE_TIME,
         Debouncer.DebounceType.kFalling
     );
 
@@ -157,13 +158,12 @@ public class ModuleIOTalonFX implements ModuleIO {
         };
         turnConfig.Feedback.RotorToSensorRatio = constants.SteerMotorGearRatio;
         turnConfig.MotionMagic.MotionMagicCruiseVelocity =
-            100.0 / constants.SteerMotorGearRatio;
+            DriveConstants.MM_CRUISE_VELOCITY;
         turnConfig.MotionMagic.MotionMagicAcceleration =
-            turnConfig.MotionMagic.MotionMagicCruiseVelocity / 0.100;
-        turnConfig.MotionMagic.MotionMagicExpo_kV =
-            0.12 * constants.SteerMotorGearRatio;
-        turnConfig.MotionMagic.MotionMagicExpo_kA = 0.1;
-        turnConfig.ClosedLoopGeneral.ContinuousWrap = true;
+            DriveConstants.MM_ACCELERATION;
+        turnConfig.MotionMagic.MotionMagicExpo_kV = DriveConstants.MM_EXPO_KV;
+        turnConfig.MotionMagic.MotionMagicExpo_kA = DriveConstants.MM_EXPO_KA;
+        turnConfig.ClosedLoopGeneral.ContinuousWrap = true; // ALWAYS TRUE FOR STEER MOTOR
         turnConfig.MotorOutput.Inverted = constants.SteerMotorInverted
             ? InvertedValue.Clockwise_Positive
             : InvertedValue.CounterClockwise_Positive;
@@ -211,7 +211,7 @@ public class ModuleIOTalonFX implements ModuleIO {
             this.turnPosition
         );
         BaseStatusSignal.setUpdateFrequencyForAll(
-            50.0,
+            DriveConstants.DRIVE_CAN_FRAME_FREQUENCY,
             this.driveVelocity,
             this.driveAppliedVolts,
             this.driveCurrent,

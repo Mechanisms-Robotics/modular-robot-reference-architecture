@@ -39,6 +39,7 @@ import frc.robot.subsystems.drivetrain.Drive;
  */
 public final class Constants {
 
+    public static final double ROBOT_LOOP_PERIOD = 0.02;
     public static final Mode SIM_MODE = Mode.SIM;
     public static final Mode CURRENT_MODE = RobotBase.isReal()
         ? Mode.REAL
@@ -357,5 +358,29 @@ public final class Constants {
         public static final double FF_RAMP_RATE = 0.1; // Volts/Sec
         public static final double WHEEL_RADIUS_MAX_VELOCITY = 0.25; // Rad/Sec
         public static final double WHEEL_RADIUS_RAMP_RATE = 0.05; // Rad/Sec^2
+
+        public static final double PATH_PLANNER_KP = 5.0;
+        public static final double PATH_PLANNER_KI = 0.0;
+        public static final double PATH_PLANNER_KD = 0.0;
+
+        public static final double MM_CRUISE_VELOCITY =
+            100.0 / STEER_GEAR_RATIO;
+        public static final double MM_ACCELERATION = MM_CRUISE_VELOCITY / 0.100;
+        public static final double MM_EXPO_KV = 0.12 * STEER_GEAR_RATIO;
+        public static final double MM_EXPO_KA = 0.1;
+
+        public static final int GRYO_CAN_ID = 30;
+
+        public static final double DRIVE_CAN_FRAME_FREQUENCY = 50.0;
+        public static final double GRYO_CAN_FRAME_FREQUENCY = 0.01;
+    }
+
+    public static class Timeouts {
+
+        public static final double STD_DEBOUNCE_TIME = 0.5; // Secs
+        public static final int STD_RETRY_ATTEMPTS = 5;
+        public static final double STD_TIMEOUT = 0.1; // Secs
+        public static final double STD_TIMEOUT_LONG = 0.25; // Secs
+        public static final double SYSID_TIMEOUT = 1.0; // Secs
     }
 }

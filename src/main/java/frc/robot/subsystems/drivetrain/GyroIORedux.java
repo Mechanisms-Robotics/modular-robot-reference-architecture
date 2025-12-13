@@ -5,11 +5,12 @@ import com.reduxrobotics.sensors.canandgyro.CanandgyroSettings;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants.Timeouts;
 import java.util.Queue;
 
 public class GyroIORedux implements GyroIO {
 
-    private final Canandgyro gyro = new Canandgyro(30);
+    private final Canandgyro gyro = new Canandgyro(DriveConstants.GRYO_CAN_ID);
 
     private final Queue<Double> yawTimestampQueue;
     private final Queue<Double> yawPositionQueue;
@@ -18,10 +19,18 @@ public class GyroIORedux implements GyroIO {
         // Configure the gyro
         CanandgyroSettings settings = new CanandgyroSettings()
             .setYawFramePeriod(1.0 / DriveConstants.ODOMETRY_FREQUENCY)
-            .setAngularPositionFramePeriod(0.01)
-            .setAngularVelocityFramePeriod(0.01);
-        gyro.setSettings(settings, 0.25, 5);
-        gyro.setYaw(0.0, 0.1);
+            .setAngularPositionFramePeriod(
+                DriveConstants.GRYO_CAN_FRAME_FREQUENCY
+            )
+            .setAngularVelocityFramePeriod(
+                DriveConstants.GRYO_CAN_FRAME_FREQUENCY
+            );
+        gyro.setSettings(
+            settings,
+            Timeouts.STD_TIMEOUT_LONG,
+            Timeouts.STD_RETRY_ATTEMPTS
+        );
+        gyro.setYaw(0.0, Timeouts.STD_TIMEOUT);
         gyro.clearStickyFaults();
 
         // Register the gyro signals
