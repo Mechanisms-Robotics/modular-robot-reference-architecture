@@ -7,7 +7,7 @@ import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.CommandPS5Controller;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.controllers.DriveController;
@@ -31,9 +31,7 @@ public class RobotContainer {
     private final Drive drive;
 
     // Controller
-    private final CommandXboxController controller = new CommandXboxController(
-        0
-    );
+    private final CommandPS5Controller controller = new CommandPS5Controller(0);
 
     // Dashboard inputs
     private final LoggedDashboardChooser<Command> autoChooser;
@@ -128,7 +126,7 @@ public class RobotContainer {
         );
 
         // Lock to 0 degrees when A button is held
-        this.controller.a().whileTrue(
+        this.controller.circle().whileTrue(
             DriveController.joystickDriveAtAngle(
                 this.drive,
                 () -> -this.controller.getLeftY(),
@@ -138,12 +136,12 @@ public class RobotContainer {
         );
 
         // Switch to X pattern when X button is pressed
-        this.controller.x().onTrue(
+        this.controller.square().onTrue(
             Commands.runOnce(this.drive::stopWithX, this.drive)
         );
 
         // Reset gyro to 0 degrees when B button is pressed
-        this.controller.b().onTrue(
+        this.controller.cross().onTrue(
             Commands.runOnce(
                 () ->
                     this.drive.setPose(
