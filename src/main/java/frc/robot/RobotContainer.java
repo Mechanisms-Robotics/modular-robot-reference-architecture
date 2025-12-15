@@ -1,6 +1,9 @@
 package frc.robot;
 
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+
 import com.pathplanner.lib.auto.AutoBuilder;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -17,7 +20,6 @@ import frc.robot.subsystems.drivetrain.GyroIORedux;
 import frc.robot.subsystems.drivetrain.ModuleIO;
 import frc.robot.subsystems.drivetrain.ModuleIOSim;
 import frc.robot.subsystems.drivetrain.ModuleIOTalonFX;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -119,9 +121,9 @@ public class RobotContainer {
         this.drive.setDefaultCommand(
             DriveController.joystickDrive(
                 this.drive,
-                () -> -this.controller.getLeftY(),
-                () -> -this.controller.getLeftX(),
-                () -> -this.controller.getRightX()
+                () -> this.controller.getLeftY(),
+                () -> this.controller.getLeftX(),
+                () -> -this.controller.getRawAxis(3) // For some reason the axis mapping is wrong
             )
         );
 
@@ -129,8 +131,8 @@ public class RobotContainer {
         this.controller.circle().whileTrue(
             DriveController.joystickDriveAtAngle(
                 this.drive,
-                () -> -this.controller.getLeftY(),
-                () -> -this.controller.getLeftX(),
+                () -> this.controller.getLeftY(),
+                () -> this.controller.getLeftX(),
                 () -> Rotation2d.kZero
             )
         );
