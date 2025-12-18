@@ -1,9 +1,12 @@
 package frc.robot.subsystems.drivetrain;
 
+import static edu.wpi.first.units.Units.Meters;
 import static frc.robot.CONSTANTS.*;
 
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import frc.robot.CONSTANTS;
+
 import org.littletonrobotics.junction.Logger;
 
 public class SwerveModule {
@@ -26,7 +29,7 @@ public class SwerveModule {
 
     public SwerveModulePosition getModulePosition() {
         return new SwerveModulePosition(
-            inputs.drivePositionRad * WHEEL_RADIUS,
+            inputs.drivePositionRad * CONSTANTS.DriveConstants.WHEEL_RADIUS.in(Meters),
             inputs.turnPosition
         );
     }
@@ -40,7 +43,7 @@ public class SwerveModule {
 
         // set the drive velocity (convert m/s to rad/s)
         double driveVelocityRadPerSec =
-            (state.speedMetersPerSecond * scaleFactor) / WHEEL_RADIUS;
+            (state.speedMetersPerSecond * scaleFactor) / DriveConstants.WHEEL_RADIUS.in(Meters);
         io.setDriveVelocity(driveVelocityRadPerSec);
 
         // set the turn position
@@ -57,7 +60,7 @@ public class SwerveModule {
             new SwerveModulePosition[sampleCount];
         for (int i = 0; i < sampleCount; i++) {
             positions[i] = new SwerveModulePosition(
-                inputs.odometryDrivePositionsRad[i] * WHEEL_RADIUS,
+                inputs.odometryDrivePositionsRad[i] * DriveConstants.WHEEL_RADIUS.in(Meters),
                 inputs.odometryTurnPositions[i]
             );
         }
