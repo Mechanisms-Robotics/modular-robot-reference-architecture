@@ -93,6 +93,7 @@ public class FollowPath extends Command {
     // See https://docs.wpilib.org/en/stable/docs/software/advanced-controls/trajectories/holonomic.html
 
     ChassisSpeeds sampleSpeeds = swerveSample.get().getChassisSpeeds();
+
     double desiredLinearVelocity = Math.sqrt(
         sampleSpeeds.vxMetersPerSecond * sampleSpeeds.vxMetersPerSecond +
         sampleSpeeds.vyMetersPerSecond * sampleSpeeds.vyMetersPerSecond);

@@ -55,9 +55,9 @@ public class CONSTANTS {
     public static final int GYRO_CAN_ID = 9;
 
     // Path Following Constants
-    public static final double PATH_FOLLOWER_P_X = 0.1;
-    public static final double PATH_FOLLOWER_P_Y = 0.1;
-    public static final double PATH_FOLLOWER_P_THETA = 0.3;
+    public static final double PATH_FOLLOWER_P_X = 2.0;
+    public static final double PATH_FOLLOWER_P_Y = 2.0;
+    public static final double PATH_FOLLOWER_P_THETA = 4.0;
 }
 
 
