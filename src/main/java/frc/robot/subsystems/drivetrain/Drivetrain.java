@@ -1,5 +1,7 @@
 package frc.robot.subsystems.drivetrain;
 
+import static frc.robot.CONSTANTS.*;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -10,140 +12,114 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.PoseEstimator8736;
-import static frc.robot.CONSTANTS.*;
 
 public class Drivetrain extends SubsystemBase {
-  // Per WPILib documentation +X is forward and +Y is left (oriented to the robot)
-  // Positive rotation is counterclockwise
-  
-  
 
-  SwerveDriveKinematics kinematics;
-  ChassisSpeeds desiredChassisSpeeds;
-  PoseEstimator8736 poseEstimator;
-  //private final StructArrayPublisher<SwerveModuleState> publisher;
+    // Per WPILib documentation +X is forward and +Y is left (oriented to the robot)
+    // Positive rotation is counterclockwise
 
-  private final SwerveModule frontLeftModule = new SwerveModule(
-      FRONT_LEFT_STEERING_CAN_ID, FRONT_LEFT_DRIVE_CAN_ID, FRONT_LEFT_ENCODER_CAN_ID);
+    SwerveDriveKinematics kinematics;
+    ChassisSpeeds desiredChassisSpeeds;
+    PoseEstimator8736 poseEstimator;
+    //private final StructArrayPublisher<SwerveModuleState> publisher;
 
-  private final SwerveModule frontRightModule = new SwerveModule(
-      FRONT_RIGHT_STEERING_CAN_ID, FRONT_RIGHT_DRIVE_CAN_ID, FRONT_RIGHT_ENCODER_CAN_ID);
+    private final SwerveModule frontLeftModule;
+    private final SwerveModule frontRightModule;
+    private final SwerveModule backLeftModule;
+    private final SwerveModule backRightModule;
 
-  private final SwerveModule backLeftModule = new SwerveModule(
-      BACK_LEFT_STEERING_CAN_ID, BACK_LEFT_DRIVE_CAN_ID, BACK_LEFT_ENCODER_CAN_ID);
+    /**
+     * Remember that the front of the robot is +X and the left side of the robot is
+     * +Y.
+     */
+    public Drivetrain(
+        ModuleIO frontLeftModuleIO,
+        ModuleIO frontRightModuleIO,
+        ModuleIO backLeftModuleIO,
+        ModuleIO backRightModuleIO
+    ) {
+        this.frontLeftModule = new SwerveModule(
+            frontLeftModuleIO,
+            "Front Left"
+        );
+        this.frontRightModule = new SwerveModule(
+            frontRightModuleIO,
+            "Front Right"
+        );
+        this.backLeftModule = new SwerveModule(backLeftModuleIO, "Back Left");
+        this.backRightModule = new SwerveModule(
+            backRightModuleIO,
+            "Back Right"
+        );
 
-  private final SwerveModule backRightModule = new SwerveModule(
-    BACK_RIGHT_STEERING_CAN_ID, BACK_RIGHT_DRIVE_CAN_ID, BACK_RIGHT_ENCODER_CAN_ID);
+        this.kinematics = new SwerveDriveKinematics(
+            FRONT_LEFT_MODULE_LOCATION,
+            FRONT_RIGHT_MODULE_LOCATION,
+            BACK_LEFT_MODULE_LOCATION,
+            BACK_RIGHT_MODULE_LOCATION
+        );
 
-  /**
-   * Remember that the front of the robot is +X and the left side of the robot is
-   * +Y.
-   */
-  public Drivetrain() {
-    this.kinematics = new SwerveDriveKinematics(
-        FRONT_LEFT_MODULE_LOCATION, FRONT_RIGHT_MODULE_LOCATION,
-        BACK_LEFT_MODULE_LOCATION, BACK_RIGHT_MODULE_LOCATION);
+        this.desiredChassisSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
+    }
 
-    this.desiredChassisSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
+    public void setDesiredState(ChassisSpeeds desiredChassisSpeeds) {
+        this.desiredChassisSpeeds = desiredChassisSpeeds;
+    }
 
-    // this.publisher = NetworkTableInstance.getDefault().getStructArrayTopic(
-    //     "/SwerveStates", SwerveModuleState.struct).publish();
-  }
+    public ChassisSpeeds getDesiredState() {
+        return this.desiredChassisSpeeds;
+    }
 
-  public void setDesiredState(ChassisSpeeds desiredChassisSpeeds) {
-    this.desiredChassisSpeeds = desiredChassisSpeeds;
-  }
+    public SwerveDriveKinematics getKinematics() {
+        return this.kinematics;
+    }
 
-  public ChassisSpeeds getDesiredState() {
-    return this.desiredChassisSpeeds;
-  }
+    public SwerveModulePosition[] getModulePositions() {
+        return new SwerveModulePosition[] {
+            this.frontLeftModule.getModulePosition(),
+            this.frontRightModule.getModulePosition(),
+            this.backLeftModule.getModulePosition(),
+            this.backRightModule.getModulePosition(),
+        };
+    }
 
-  public SwerveDriveKinematics getKinematics() {
-    return this.kinematics;
-  }
+    public void setModulesToEncoders() {
+        this.frontLeftModule.setModuleToEncoder();
+        this.frontRightModule.setModuleToEncoder();
+        this.backLeftModule.setModuleToEncoder();
+        this.backRightModule.setModuleToEncoder();
+    }
 
-  public SwerveModulePosition[] getModulePositions() {
-    return new SwerveModulePosition[] {
-        this.frontLeftModule.getModulePosition(),
-        this.frontRightModule.getModulePosition(),
-        this.backLeftModule.getModulePosition(),
-        this.backRightModule.getModulePosition()
-    };
-  }
+    public void setPoseEstimator(PoseEstimator8736 poseEstimator) {
+        this.poseEstimator = poseEstimator;
+    }
 
-  public void setModulesToEncoders() {
-    this.frontLeftModule.setModuleToEncoder();
-    this.frontRightModule.setModuleToEncoder();
-    this.backLeftModule.setModuleToEncoder();
-    this.backRightModule.setModuleToEncoder();
-  }
+    @Override
+    public void periodic() {
+        // update the pose estimator
 
-  public void setPoseEstimator(PoseEstimator8736 poseEstimator) {
-    this.poseEstimator = poseEstimator;
-  }
+        this.poseEstimator.addOdometryMeasurement(this.getModulePositions());
 
-  @Override
-  public void periodic() {
-    // update the pose estimator
+        Pose2d pose = this.poseEstimator.getPose();
 
-    this.poseEstimator.addOdometryMeasurement(this.getModulePositions());
+        // send the new desired states down to the modules
+        SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
+            this.desiredChassisSpeeds
+        );
 
-    Pose2d pose = this.poseEstimator.getPose();
-    SmartDashboard.putNumber("Pose Estimator/X", pose.getX());
-    SmartDashboard.putNumber("Pose Estimator/Y", pose.getY());
-    SmartDashboard.putNumber("Pose Estimator/Rotation Degrees", pose.getRotation().getDegrees());
+        SwerveModuleState frontLeftState = moduleStates[0];
+        SwerveModuleState frontRightState = moduleStates[1];
+        SwerveModuleState backLeftState = moduleStates[2];
+        SwerveModuleState backRightState = moduleStates[3];
 
-    // send the new desired states down to the modules
+        this.frontLeftModule.setModuleState(frontLeftState);
+        this.frontRightModule.setModuleState(frontRightState);
+        this.backLeftModule.setModuleState(backLeftState);
+        this.backRightModule.setModuleState(backRightState);
+    }
 
-    SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
-      this.desiredChassisSpeeds);
-
-    SwerveModuleState frontLeftState = moduleStates[0];
-    SwerveModuleState frontRightState = moduleStates[1];
-    SwerveModuleState backLeftState = moduleStates[2];
-    SwerveModuleState backRightState = moduleStates[3];
-
-    // publisher.set(new SwerveModuleState[] {
-    //     frontLeftState,
-    //     frontRightState,
-    //     backLeftState,
-    //     backRightState
-    // });
-
-    this.frontLeftModule.setModuleState(frontLeftState);
-    this.frontRightModule.setModuleState(frontRightState);
-    this.backLeftModule.setModuleState(backLeftState);
-    this.backRightModule.setModuleState(backRightState);
-  }
-
-  /**
-   * Example command factory method.
-   *
-   * @return a command
-   */
-  public Command exampleMethodCommand() {
-    // Inline construction of command goes here.
-    // Subsystem::RunOnce implicitly requires `this` subsystem.
-    return runOnce(
-        () -> {
-          /* one-time action goes here */
-        });
-  }
-
-  /**
-   * An example method querying a boolean state of the subsystem (for example, a
-   * digital sensor).
-   *
-   * @return value of some boolean subsystem state, such as a digital sensor.
-   */
-  public boolean exampleCondition() {
-    // Query some boolean state, such as a digital sensor.
-    return false;
-  }
-
-  @Override
-  public void simulationPeriodic() {
-    // This method will be called once per scheduler run during simulation
-    this.periodic();
-  }
+    @Override
+    public void simulationPeriodic() {
+        this.periodic();
+    }
 }
