@@ -1,10 +1,6 @@
 package frc.robot.subsystems.drivetrain;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.littletonrobotics.junction.AutoLogOutput;
-import org.littletonrobotics.junction.Logger;
+import static frc.robot.CONSTANTS.CONTROLLER_PORT;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -14,8 +10,13 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.CONSTANTS;
 import frc.robot.CONSTANTS.DriveConstants;
 import frc.robot.PoseEstimator8736;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.Logger;
 
 public class Drivetrain extends SubsystemBase {
 
@@ -33,10 +34,10 @@ public class Drivetrain extends SubsystemBase {
     private final SwerveModule backRightModule;
 
     private final GyroIO gyroIO;
-    private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
+    private final GyroIOInputsAutoLogged gyroInputs =
+        new GyroIOInputsAutoLogged();
 
     static final Lock odometryLock = new ReentrantLock();
-
 
     /**
      * Remember that the front of the robot is +X and the left side of the robot is
@@ -66,10 +67,22 @@ public class Drivetrain extends SubsystemBase {
         );
 
         this.kinematics = new SwerveDriveKinematics(
-            new Translation2d(DriveConstants.FRONT_LEFT.LocationX, DriveConstants.FRONT_LEFT.LocationY),
-            new Translation2d(DriveConstants.FRONT_RIGHT.LocationX, DriveConstants.FRONT_RIGHT.LocationY),
-            new Translation2d(DriveConstants.BACK_LEFT.LocationX, DriveConstants.BACK_LEFT.LocationY),
-            new Translation2d(DriveConstants.BACK_RIGHT.LocationX, DriveConstants.BACK_RIGHT.LocationY)
+            new Translation2d(
+                DriveConstants.FRONT_LEFT.LocationX,
+                DriveConstants.FRONT_LEFT.LocationY
+            ),
+            new Translation2d(
+                DriveConstants.FRONT_RIGHT.LocationX,
+                DriveConstants.FRONT_RIGHT.LocationY
+            ),
+            new Translation2d(
+                DriveConstants.BACK_LEFT.LocationX,
+                DriveConstants.BACK_LEFT.LocationY
+            ),
+            new Translation2d(
+                DriveConstants.BACK_RIGHT.LocationX,
+                DriveConstants.BACK_RIGHT.LocationY
+            )
         );
         PhoenixOdometryThread.getInstance().start();
 
@@ -116,14 +129,16 @@ public class Drivetrain extends SubsystemBase {
         this.backRightModule.periodic();
 
         // Update odometry
-        double[] sampleTimestamps = this.frontLeftModule.getOdometryTimestamps(); // All signals are sampled together
+        double[] sampleTimestamps =
+            this.frontLeftModule.getOdometryTimestamps(); // All signals are sampled together
         int sampleCount = sampleTimestamps.length;
         for (int i = 0; i < sampleCount; i++) {
             // Read wheel positions from each module
             SwerveModulePosition[] modulePositions =
                 new SwerveModulePosition[4];
             modulePositions[0] = this.frontLeftModule.getOdometryPositions()[i];
-            modulePositions[1] = this.frontRightModule.getOdometryPositions()[i];
+            modulePositions[1] =
+                this.frontRightModule.getOdometryPositions()[i];
             modulePositions[2] = this.backLeftModule.getOdometryPositions()[i];
             modulePositions[3] = this.backRightModule.getOdometryPositions()[i];
 
@@ -139,9 +154,20 @@ public class Drivetrain extends SubsystemBase {
         }
 
         // send the new desired states down to the modules
+        ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(
+            this.desiredChassisSpeeds,
+            CONSTANTS.ROBOT_LOOP_PERIOD
+        );
         SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
             this.desiredChassisSpeeds
         );
+        SwerveDriveKinematics.desaturateWheelSpeeds(
+            moduleStates,
+            CONSTANTS.DriveConstants.SPEED_AT_12_VOLTS
+        );
+
+        Logger.recordOutput("SwerveStates/Setpoints", moduleStates);
+        Logger.recordOutput("SwerveChassisSpeeds/Setpoints", discreteSpeeds);
 
         SwerveModuleState frontLeftState = moduleStates[0];
         SwerveModuleState frontRightState = moduleStates[1];
