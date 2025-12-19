@@ -11,6 +11,11 @@ import static frc.robot.CONSTANTS.DriveConstants;
 import choreo.Choreo;
 import choreo.trajectory.SwerveSample;
 import choreo.trajectory.Trajectory;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -72,6 +77,10 @@ public class RobotContainer {
                 () -> {
                     double forward = -this.controller.getLeftY(); // Negative to match FRC convention
                     double strafe = -this.controller.getLeftX();
+                    Translation2d driveSpeeds = getDriveVelocity(
+                        forward,
+                        strafe
+                    );
                     double rotation;
                     if (CONSTANTS.CURRENT_MODE == CONSTANTS.Mode.SIM) {
                         rotation = -this.controller.getRawAxis(3); // Why is sim different then driverstation?
@@ -80,37 +89,27 @@ public class RobotContainer {
                     }
 
                     // apply deadbands and scaling
+                    rotation = MathUtil.applyDeadband(
+                        rotation,
+                        CONSTANTS.DriveConstants.DEADBAND
+                    );
 
-                    forward = Math.abs(forward) >
-                        CONSTANTS.DriveConstants.DEADBAND
-                        ? forward
-                        : 0.0;
-                    strafe = Math.abs(strafe) >
-                        CONSTANTS.DriveConstants.DEADBAND
-                        ? strafe
-                        : 0.0;
-                    rotation = Math.abs(rotation) >
-                        CONSTANTS.DriveConstants.DEADBAND
-                        ? rotation
-                        : 0.0;
+                    rotation = Math.copySign(rotation * rotation, rotation);
 
                     ChassisSpeeds speeds = new ChassisSpeeds(
-                        forward *
-                            forward *
-                            forward *
+                        driveSpeeds.getX() *
                             CONSTANTS.DriveConstants.SPEED_AT_12_VOLTS.in(
                                 MetersPerSecond
                             ),
-                        strafe *
-                            strafe *
-                            strafe *
+                        driveSpeeds.getY() *
                             CONSTANTS.DriveConstants.SPEED_AT_12_VOLTS.in(
                                 MetersPerSecond
                             ),
-                        rotation *
-                            rotation *
-                            rotation *
-                            CONSTANTS.DriveConstants.ANGLE_MAX_VELOCITY
+                        (rotation *
+                                (CONSTANTS.DriveConstants.SPEED_AT_12_VOLTS.in(
+                                        MetersPerSecond
+                                    ))) /
+                            CONSTANTS.DriveConstants.DRIVE_BASE_RADIUS
                     );
 
                     // convert to robot-oriented coordinates and pass to swerve subsystem
@@ -139,5 +138,17 @@ public class RobotContainer {
     public Command getAutonomousCommand() {
         return testAuto;
         //return Commands.print("No autonomous command configured");
+    }
+
+    private static Translation2d getDriveVelocity(double x, double y) {
+        double linearMag = MathUtil.applyDeadband(
+            Math.hypot(x, y),
+            DriveConstants.DEADBAND
+        );
+        Rotation2d direction = new Rotation2d(Math.atan2(y, x));
+        linearMag = linearMag * linearMag;
+        return new Pose2d(Translation2d.kZero, direction)
+            .transformBy(new Transform2d(linearMag, 0.0, Rotation2d.kZero))
+            .getTranslation();
     }
 }
