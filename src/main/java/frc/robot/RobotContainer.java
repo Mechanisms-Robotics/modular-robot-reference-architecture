@@ -22,6 +22,7 @@ import frc.robot.subsystems.drivetrain.GyroIO;
 import frc.robot.subsystems.drivetrain.GyroIORedux;
 import frc.robot.subsystems.drivetrain.ModuleIOSim;
 import frc.robot.subsystems.drivetrain.ModuleIOTalonFX;
+import frc.robot.subsystems.drivetrain.ModuleIOTalonFXRedux;
 import java.util.Optional;
 
 public class RobotContainer {
@@ -46,10 +47,10 @@ public class RobotContainer {
         } else {
             this.drivetrain = new Drivetrain(
                 new GyroIO() {},
-                new ModuleIOTalonFX(DriveConstants.FRONT_LEFT),
-                new ModuleIOTalonFX(DriveConstants.FRONT_RIGHT),
-                new ModuleIOTalonFX(DriveConstants.BACK_LEFT),
-                new ModuleIOTalonFX(DriveConstants.BACK_RIGHT)
+                new ModuleIOTalonFXRedux(DriveConstants.FRONT_LEFT),
+                new ModuleIOTalonFXRedux(DriveConstants.FRONT_RIGHT),
+                new ModuleIOTalonFXRedux(DriveConstants.BACK_LEFT),
+                new ModuleIOTalonFXRedux(DriveConstants.BACK_RIGHT)
             );
         }
         this.drivetrainController = new DrivetrainController(this.drivetrain);

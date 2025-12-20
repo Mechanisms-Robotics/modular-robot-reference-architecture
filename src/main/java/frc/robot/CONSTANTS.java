@@ -21,7 +21,6 @@ import com.ctre.phoenix6.swerve.SwerveModuleConstants.DriveMotorArrangement;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.SteerFeedbackType;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.SteerMotorArrangement;
 import com.ctre.phoenix6.swerve.SwerveModuleConstantsFactory;
-
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.units.measure.Angle;
@@ -368,6 +367,10 @@ public class CONSTANTS {
         public static final int GYRO_CAN_ID = 9;
 
         public static final double DRIVE_CAN_FRAME_FREQUENCY = 50.0;
+        public static final double DRIVE_CAN_FRAME_PERIOD =
+            1.0 / DRIVE_CAN_FRAME_FREQUENCY;
+        public static final double DRIVE_CAN_FRAME_PERIOD_SEC =
+            DRIVE_CAN_FRAME_PERIOD / 1000.0;
         public static final double GRYO_CAN_FRAME_FREQUENCY = 0.01;
     }
 
