@@ -56,5 +56,7 @@
     "edu.wpi.first.math.proto.*",
     "edu.wpi.first.math.**.proto.*",
     "edu.wpi.first.math.**.struct.*",
-  ]
+  ],
+  "git.enabled": false,
+  "java.debug.settings.onBuildFailureProceed": true
 }

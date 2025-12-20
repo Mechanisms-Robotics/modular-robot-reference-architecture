@@ -4,21 +4,49 @@
 
 package frc.robot;
 
-import java.time.Duration;
 import java.time.Instant;
 
-import edu.wpi.first.wpilibj.TimedRobot;
+import org.littletonrobotics.junction.LogFileUtil;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
+
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import static frc.robot.CONSTANTS.*;
 
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
   public Instant lastSwerveModuleSetTime = Instant.MIN;
 
   private Command autonomousCommand;
   private final RobotContainer robotContainer;
 
   public Robot() {
+    switch (CONSTANTS.CURRENT_MODE) {
+      case REAL:
+        // Running on a real robot, log to a USB stick ("/U/logs")
+        Logger.addDataReceiver(new WPILOGWriter());
+        Logger.addDataReceiver(new NT4Publisher());
+        break;
+      case SIM:
+        // Running a physics simulator, log to NT
+        Logger.addDataReceiver(new NT4Publisher());
+        break;
+      case REPLAY:
+        // Replaying a log, set up replay source
+        setUseTiming(false); // Run as fast as possible
+        String logPath = LogFileUtil.findReplayLog();
+        Logger.setReplaySource(new WPILOGReader(logPath));
+        Logger.addDataReceiver(
+          new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))
+        );
+        break;
+    }
+
+    // Start AdvantageKit logger
+    Logger.start();
+
     this.robotContainer = new RobotContainer();
   }
 
@@ -32,20 +60,10 @@ public class Robot extends TimedRobot {
 
   @Override
   public void disabledPeriodic() {
-    // set the swerve modules to the external encoders periodically
-    Instant now = Instant.now();
-    Duration duration = Duration.between(this.lastSwerveModuleSetTime, now);
-    if (duration.compareTo(Duration.ofSeconds(SWERVE_ENCODER_SET_FREQUECY_SECONDS)) >= 0) {
-      this.robotContainer.setSwerveModulesToEncoders();
-      this.lastSwerveModuleSetTime = now;
-    }
   }
 
   @Override
   public void disabledExit() {
-    // Zero the gyro when we enable. We will probably have to start setting this
-    // differently at the start of autos. This clearly will have to change.
-    this.robotContainer.zeroGyro();
   }
 
   @Override
