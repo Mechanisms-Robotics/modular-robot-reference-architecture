@@ -1,6 +1,9 @@
 {
   "java.configuration.updateBuildConfiguration": "automatic",
   "java.server.launchMode": "Standard",
+  "files.associations": {
+    "*.java.template": "java"
+  },
   "files.exclude": {
     "**/.git": true,
     "**/.svn": true,
