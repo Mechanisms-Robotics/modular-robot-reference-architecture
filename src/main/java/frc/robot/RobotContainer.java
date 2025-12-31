@@ -13,7 +13,12 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.subsystems.drivetrain.DrivetrainController;
+import choreo.Choreo;
+import choreo.trajectory.Trajectory;
+import choreo.trajectory.SwerveSample;
 import static frc.robot.CONSTANTS.*;
+
+import java.util.Optional;
 
 public class RobotContainer {
 
@@ -28,6 +33,7 @@ public class RobotContainer {
     this.poseEstimator.initialize(new Pose2d(), this.drivetrain);
     this.drivetrain.setPoseEstimator(this.poseEstimator);
     configureBindings();
+    generateAutos();
   }
 
   public void setSwerveModulesToEncoders() {
@@ -45,7 +51,7 @@ public class RobotContainer {
       }
     ));
 
-    drivetrain.setDefaultCommand(
+    this.drivetrain.setDefaultCommand(
       new RunCommand(
           () -> {
               double forward = -this.controller.getLeftY(); // Negative to match FRC convention
@@ -65,16 +71,31 @@ public class RobotContainer {
               );
 
               // convert to robot-oriented coordinates and pass to swerve subsystem
-              ChassisSpeeds robotOriented = drivetrainController.fieldToRobotChassisSpeeds(speeds);
-              drivetrain.setDesiredState(robotOriented);
+              ChassisSpeeds robotOriented = this.drivetrainController.fieldToRobotChassisSpeeds(speeds);
+              this.drivetrain.setDesiredState(robotOriented);
           },
-          drivetrain
+          this.drivetrain
       )
-  );
-}
+    );
+  }
+
+  private Command testAuto = null;
+
+  private void generateAutos() {
+    Optional<Trajectory<SwerveSample>> trajectory = Choreo.loadTrajectory("Test Path");
+    this.testAuto = new FollowPath(
+        trajectory.get(),
+        this.drivetrain,
+        this.poseEstimator,
+        true
+    );
+
+    System.out.println("*** Loaded Test Path autonomous ***");
+  }
 
   public Command getAutonomousCommand() {
-    return Commands.print("No autonomous command configured");
+    return testAuto;
+    //return Commands.print("No autonomous command configured");
   }
 }
 
