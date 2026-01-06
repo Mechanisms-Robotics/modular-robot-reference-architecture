@@ -1,3 +1,16 @@
+/******************************************************************************
+ *                                                                            *
+ *                 ** MECHIATTO **                                            *
+ *                                                                            *
+ *  THIS FILE IS FOR MANAGING THE CONSTANTS FOR THE MECHIATTO PRACTICE BOT.   *
+ *                                                                            *
+ *  DO NOT USE THIS FILE FOR THE COMPETITION BOT.                             *
+ *                                                                            *
+ *  MAKE SURE TO UPDATE CONSTANTS HERE ONLY IF THEY ARE SPECIFIC TO THE       *
+ *  MECHIATTO PRACTICE BOT.                                                   *
+ *                                                                            *
+ ******************************************************************************/
+
 package frc.robot;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
