@@ -155,7 +155,8 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
 
         // Update to use the gear ration of the steer motor rather than the steer ration
         // after the can encoder
-        turnConfig.Feedback.RotorToSensorRatio = constants.SteerMotorGearRatio;
+       // turnConfig.Feedback.RotorToSensorRatio = constants.SteerMotorGearRatio;
+        turnConfig.Feedback.SensorToMechanismRatio = constants.SteerMotorGearRatio;
         turnConfig.MotionMagic.MotionMagicCruiseVelocity =
             DriveConstants.MM_CRUISE_VELOCITY;
         turnConfig.MotionMagic.MotionMagicAcceleration =
@@ -171,10 +172,11 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
         );
 
         // Configure CANCoder
-        cancoder.setAbsPosition(
-            constants.EncoderOffset,
-            CONSTANTS.Timeouts.STD_TIMEOUT_LONG
-        );
+        // We use the zero button instead of the code configuration
+        //cancoder.setAbsPosition(
+        //    constants.EncoderOffset,
+        //    CONSTANTS.Timeouts.STD_TIMEOUT_LONG
+        //);
         CanandmagSettings settings = new CanandmagSettings();
         settings.setInvertDirection(constants.EncoderInverted);
         settings.setPositionFramePeriod(
@@ -229,13 +231,13 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
 
         // Reset the turn motor position based on the can encoder
         // Cast is safe as defined in the reducx docs
-        FrameData<Double> data = (FrameData<Double>) (Frame.waitForFrames(
+        FrameData<?>[] data = Frame.waitForFrames(
                 Timeouts.STD_TIMEOUT_LONG,
                 this.turnAbsolutePosition
-            )[0]);
+        );
         tryUntilOk(10, () ->
             turnTalon.setPosition(
-                data.getValue(),
+                this.cancoder.getAbsPosition(),
                 CONSTANTS.Timeouts.STD_TIMEOUT_LONG
             )
         );
@@ -283,7 +285,7 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
                 turnEncoderStatus != null
             );
         inputs.turnAbsolutePosition = Rotation2d.fromRotations(
-            this.turnAbsolutePosition.getValue()
+            this.cancoder.getAbsPosition()
         );
         inputs.turnPosition = Rotation2d.fromRotations(
             this.turnPosition.getValueAsDouble()

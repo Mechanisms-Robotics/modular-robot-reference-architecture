@@ -47,6 +47,7 @@ public class SwerveModule {
         io.setDriveVelocity(driveVelocityRadPerSec);
 
         // set the turn position
+        Logger.recordOutput("Module " + this.name + "/Optimised Angle", state.angle);
         io.setTurnPosition(state.angle);
     }
 

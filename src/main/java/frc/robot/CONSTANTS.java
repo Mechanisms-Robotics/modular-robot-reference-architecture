@@ -85,11 +85,11 @@ public class CONSTANTS {
         // The steer motor uses any SwerveModule.SteerRequestType control request with the
         // output type specified by SwerveModuleConstants.SteerMotorClosedLoopOutput
         private static final Slot0Configs STEER_GAINS = new Slot0Configs()
-            .withKP(100)
+            .withKP(25.0)
             .withKI(0)
-            .withKD(0.5)
-            .withKS(0.1)
-            .withKV(1.91)
+            .withKD(0)
+            .withKS(0)
+            .withKV(0)
             .withKA(0)
             .withStaticFeedforwardSign(
                 StaticFeedforwardSignValue.UseClosedLoopSign
@@ -101,7 +101,7 @@ public class CONSTANTS {
             .withKI(0)
             .withKD(0)
             .withKS(0)
-            .withKV(0.124);
+            .withKV(0);
 
         // The closed-loop output type to use for the steer motors;
         // This affects the PID/FF gains for the steer motors
@@ -146,10 +146,7 @@ public class CONSTANTS {
 
         // CAN bus that the devices are located on;
         // All swerve devices must share the same CAN bus
-        public static final CANBus CAN_BUS = new CANBus(
-            "canivore",
-            "./logs/example.hoot"
-        );
+        public static final CANBus CAN_BUS = new CANBus("rio");
 
         // Theoretical free speed (m/s) at 12 V applied output;
         // This needs to be tuned to your individual robot
@@ -158,7 +155,7 @@ public class CONSTANTS {
 
         // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns;
         // This may need to be tuned to your individual robot
-        private static final double COUPLE_RATIO = 3.8181818181818183;
+        private static final double COUPLE_RATIO = 0.0;
 
         private static final double DRIVE_GEAR_RATIO = 7.363636363636365;
         private static final double STEER_GEAR_RATIO = 150.0 / 7.0; // ~21.43
@@ -190,7 +187,7 @@ public class CONSTANTS {
         >()
             .withDriveMotorGearRatio(DRIVE_GEAR_RATIO)
             .withSteerMotorGearRatio(STEER_GEAR_RATIO)
-            .withCouplingGearRatio(COUPLE_RATIO)
+            //.withCouplingGearRatio(COUPLE_RATIO)
             .withWheelRadius(WHEEL_RADIUS)
             .withSteerMotorGains(STEER_GAINS)
             .withDriveMotorGains(DRIVE_GAINS)
@@ -214,10 +211,10 @@ public class CONSTANTS {
         private static final int FRONT_LEFT_STEER_MOTOR_ID = 5;
         private static final int FRONT_LEFT_ENCODER_ID = 1;
         private static final Angle FRONT_LEFT_ENCODER_OFFSET = Rotations.of(
-            0.15234375
+            0
         );
         private static final boolean FRONT_LEFT_STEER_MOTOR_INVERTED = true;
-        private static final boolean FRONT_LEFT_ENCODER_INVERTED = false;
+        private static final boolean FRONT_LEFT_ENCODER_INVERTED = true;
 
         private static final Distance FRONT_LEFT_X_POS = Meters.of(0.33);
         private static final Distance FRONT_LEFT_Y_POS = Meters.of(0.23);
@@ -227,10 +224,10 @@ public class CONSTANTS {
         private static final int FRONT_RIGHT_STEER_MOTOR_ID = 6;
         private static final int FRONT_RIGHT_ENCODER_ID = 2;
         private static final Angle FRONT_RIGHT_ENCODER_OFFSET = Rotations.of(
-            -0.4873046875
+            0
         );
         private static final boolean FRONT_RIGHT_STEER_MOTOR_INVERTED = true;
-        private static final boolean FRONT_RIGHT_ENCODER_INVERTED = false;
+        private static final boolean FRONT_RIGHT_ENCODER_INVERTED = true;
 
         private static final Distance FRONT_RIGHT_X_POS = Meters.of(0.33);
         private static final Distance FRONT_RIGHT_Y_POS = Meters.of(-0.23);
@@ -240,10 +237,10 @@ public class CONSTANTS {
         private static final int BACK_LEFT_STEER_MOTOR_ID = 4;
         private static final int BACK_LEFT_ENCODER_ID = 4;
         private static final Angle BACK_LEFT_ENCODER_OFFSET = Rotations.of(
-            -0.219482421875
+            0
         );
         private static final boolean BACK_LELFT_STEER_MOTOR_INVERTED = true;
-        private static final boolean BACK_LEFT_ENCODER_INVERTED = false;
+        private static final boolean BACK_LEFT_ENCODER_INVERTED = true;
 
         private static final Distance BACK_LEFT_X_POS = Meters.of(-0.33);
         private static final Distance BACK_LEFT_Y_POS = Meters.of(0.23);
@@ -253,10 +250,10 @@ public class CONSTANTS {
         private static final int BACK_RIGHT_STEER_MOTOR_ID = 3;
         private static final int BACK_RIGHT_ENCODER_ID = 3;
         private static final Angle BACK_RIGHT_ENOCDER_OFFSET = Rotations.of(
-            0.17236328125
+            0
         );
         private static final boolean BACK_RIGHT_STEER_MOTOR_INVERTED = true;
-        private static final boolean BACK_RIGHT_ENCODER_INVERTED = false;
+        private static final boolean BACK_RIGHT_ENCODER_INVERTED = true;
 
         private static final Distance BACK_RIGHT_X_POS = Meters.of(-0.33);
         private static final Distance BACK_RIGHT_Y_POS = Meters.of(-0.23);
@@ -381,8 +378,7 @@ public class CONSTANTS {
         public static final double DRIVE_CAN_FRAME_FREQUENCY = 50.0;
         public static final double DRIVE_CAN_FRAME_PERIOD =
             1.0 / DRIVE_CAN_FRAME_FREQUENCY;
-        public static final double DRIVE_CAN_FRAME_PERIOD_SEC =
-            DRIVE_CAN_FRAME_PERIOD / 1000.0;
+        public static final double DRIVE_CAN_FRAME_PERIOD_SEC = 0.01;
         public static final double GRYO_CAN_FRAME_FREQUENCY = 0.01;
     }
 
