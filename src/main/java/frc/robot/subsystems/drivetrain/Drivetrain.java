@@ -1,149 +1,203 @@
 package frc.robot.subsystems.drivetrain;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.CONSTANTS;
+import frc.robot.CONSTANTS.DriveConstants;
 import frc.robot.PoseEstimator8736;
-import static frc.robot.CONSTANTS.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.Logger;
 
 public class Drivetrain extends SubsystemBase {
-  // Per WPILib documentation +X is forward and +Y is left (oriented to the robot)
-  // Positive rotation is counterclockwise
-  
-  
 
-  SwerveDriveKinematics kinematics;
-  ChassisSpeeds desiredChassisSpeeds;
-  PoseEstimator8736 poseEstimator;
-  //private final StructArrayPublisher<SwerveModuleState> publisher;
+    // Per WPILib documentation +X is forward and +Y is left (oriented to the robot)
+    // Positive rotation is counterclockwise
 
-  private final SwerveModule frontLeftModule = new SwerveModule(
-      FRONT_LEFT_STEERING_CAN_ID, FRONT_LEFT_DRIVE_CAN_ID, FRONT_LEFT_ENCODER_CAN_ID);
+    SwerveDriveKinematics kinematics;
+    ChassisSpeeds desiredChassisSpeeds;
+    PoseEstimator8736 poseEstimator;
+    //private final StructArrayPublisher<SwerveModuleState> publisher;
 
-  private final SwerveModule frontRightModule = new SwerveModule(
-      FRONT_RIGHT_STEERING_CAN_ID, FRONT_RIGHT_DRIVE_CAN_ID, FRONT_RIGHT_ENCODER_CAN_ID);
+    private final SwerveModule frontLeftModule;
+    private final SwerveModule frontRightModule;
+    private final SwerveModule backLeftModule;
+    private final SwerveModule backRightModule;
 
-  private final SwerveModule backLeftModule = new SwerveModule(
-      BACK_LEFT_STEERING_CAN_ID, BACK_LEFT_DRIVE_CAN_ID, BACK_LEFT_ENCODER_CAN_ID);
+    private final GyroIO gyroIO;
+    private final GyroIOInputsAutoLogged gyroInputs =
+        new GyroIOInputsAutoLogged();
 
-  private final SwerveModule backRightModule = new SwerveModule(
-    BACK_RIGHT_STEERING_CAN_ID, BACK_RIGHT_DRIVE_CAN_ID, BACK_RIGHT_ENCODER_CAN_ID);
+    static final Lock odometryLock = new ReentrantLock();
 
-  /**
-   * Remember that the front of the robot is +X and the left side of the robot is
-   * +Y.
-   */
-  public Drivetrain() {
-    this.kinematics = new SwerveDriveKinematics(
-        FRONT_LEFT_MODULE_LOCATION, FRONT_RIGHT_MODULE_LOCATION,
-        BACK_LEFT_MODULE_LOCATION, BACK_RIGHT_MODULE_LOCATION);
+    /**
+     * Remember that the front of the robot is +X and the left side of the robot is
+     * +Y.
+     */
+    public Drivetrain(
+        GyroIO gyroIO,
+        ModuleIO frontLeftModuleIO,
+        ModuleIO frontRightModuleIO,
+        ModuleIO backLeftModuleIO,
+        ModuleIO backRightModuleIO
+    ) {
+        this.gyroIO = gyroIO;
 
-    this.desiredChassisSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
+        this.frontLeftModule = new SwerveModule(
+            frontLeftModuleIO,
+            "Front Left"
+        );
+        this.frontRightModule = new SwerveModule(
+            frontRightModuleIO,
+            "Front Right"
+        );
+        this.backLeftModule = new SwerveModule(backLeftModuleIO, "Back Left");
+        this.backRightModule = new SwerveModule(
+            backRightModuleIO,
+            "Back Right"
+        );
 
-    // this.publisher = NetworkTableInstance.getDefault().getStructArrayTopic(
-    //     "/SwerveStates", SwerveModuleState.struct).publish();
-  }
+        this.kinematics = new SwerveDriveKinematics(
+            new Translation2d(
+                DriveConstants.FRONT_LEFT.LocationX,
+                DriveConstants.FRONT_LEFT.LocationY
+            ),
+            new Translation2d(
+                DriveConstants.FRONT_RIGHT.LocationX,
+                DriveConstants.FRONT_RIGHT.LocationY
+            ),
+            new Translation2d(
+                DriveConstants.BACK_LEFT.LocationX,
+                DriveConstants.BACK_LEFT.LocationY
+            ),
+            new Translation2d(
+                DriveConstants.BACK_RIGHT.LocationX,
+                DriveConstants.BACK_RIGHT.LocationY
+            )
+        );
+        PhoenixOdometryThread.getInstance().start();
 
-  public void setDesiredState(ChassisSpeeds desiredChassisSpeeds) {
-    this.desiredChassisSpeeds = desiredChassisSpeeds;
-  }
+        this.poseEstimator = new PoseEstimator8736(
+            this.kinematics,
+            Rotation2d.kZero,
+            Pose2d.kZero
+        );
 
-  public ChassisSpeeds getDesiredState() {
-    return this.desiredChassisSpeeds;
-  }
+        this.desiredChassisSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
+    }
 
-  public SwerveDriveKinematics getKinematics() {
-    return this.kinematics;
-  }
+    public void setDesiredState(ChassisSpeeds desiredChassisSpeeds) {
+        this.desiredChassisSpeeds = desiredChassisSpeeds;
+    }
 
-  public SwerveModulePosition[] getModulePositions() {
-    return new SwerveModulePosition[] {
-        this.frontLeftModule.getModulePosition(),
-        this.frontRightModule.getModulePosition(),
-        this.backLeftModule.getModulePosition(),
-        this.backRightModule.getModulePosition()
-    };
-  }
+    public ChassisSpeeds getDesiredState() {
+        return this.desiredChassisSpeeds;
+    }
 
-  public void setModulesToEncoders() {
-    this.frontLeftModule.setModuleToEncoder();
-    this.frontRightModule.setModuleToEncoder();
-    this.backLeftModule.setModuleToEncoder();
-    this.backRightModule.setModuleToEncoder();
-  }
+    public SwerveDriveKinematics getKinematics() {
+        return this.kinematics;
+    }
 
-  public void setPoseEstimator(PoseEstimator8736 poseEstimator) {
-    this.poseEstimator = poseEstimator;
-  }
+    public SwerveModulePosition[] getModulePositions() {
+        return new SwerveModulePosition[] {
+            this.frontLeftModule.getModulePosition(),
+            this.frontRightModule.getModulePosition(),
+            this.backLeftModule.getModulePosition(),
+            this.backRightModule.getModulePosition(),
+        };
+    }
 
-  @Override
-  public void periodic() {
-    // update the pose estimator
+    @Override
+    public void periodic() {
+        odometryLock.lock();
+        gyroIO.updateInputs(gyroInputs);
+        Logger.processInputs("Drive/Gyro", gyroInputs);
 
-    this.poseEstimator.addOdometryMeasurement(this.getModulePositions());
+        // update module inputs
+        this.frontLeftModule.periodic();
+        this.frontRightModule.periodic();
+        this.backLeftModule.periodic();
+        this.backRightModule.periodic();
 
-    Pose2d pose = this.poseEstimator.getPose();
-    SmartDashboard.putNumber("Pose Estimator/X", pose.getX());
-    SmartDashboard.putNumber("Pose Estimator/Y", pose.getY());
-    SmartDashboard.putNumber("Pose Estimator/Rotation Degrees", pose.getRotation().getDegrees());
+        // Update odometry
+        double[] sampleTimestamps =
+            this.frontLeftModule.getOdometryTimestamps(); // All signals are sampled together
+        int sampleCount = sampleTimestamps.length;
+        for (int i = 0; i < sampleCount; i++) {
+            // Read wheel positions from each module
+            SwerveModulePosition[] modulePositions =
+                new SwerveModulePosition[4];
+            modulePositions[0] = this.frontLeftModule.getOdometryPositions()[i];
+            modulePositions[1] =
+                this.frontRightModule.getOdometryPositions()[i];
+            modulePositions[2] = this.backLeftModule.getOdometryPositions()[i];
+            modulePositions[3] = this.backRightModule.getOdometryPositions()[i];
 
-    // send the new desired states down to the modules
+            // Update pose estimator with gyro rotation (or null to use kinematics)
+            Rotation2d gyroRotation = this.gyroInputs.connected
+                ? this.gyroInputs.odometryYawPositions[i]
+                : null;
+            this.poseEstimator.updateOdometry(
+                modulePositions,
+                gyroRotation,
+                sampleTimestamps[i]
+            );
+        }
 
-    SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
-      this.desiredChassisSpeeds);
+        // send the new desired states down to the modules
+        ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(
+            this.desiredChassisSpeeds,
+            CONSTANTS.ROBOT_LOOP_PERIOD
+        );
+        SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
+            this.desiredChassisSpeeds
+        );
+        SwerveDriveKinematics.desaturateWheelSpeeds(
+            moduleStates,
+            CONSTANTS.DriveConstants.SPEED_AT_12_VOLTS
+        );
 
-    SwerveModuleState frontLeftState = moduleStates[0];
-    SwerveModuleState frontRightState = moduleStates[1];
-    SwerveModuleState backLeftState = moduleStates[2];
-    SwerveModuleState backRightState = moduleStates[3];
+        Logger.recordOutput("SwerveStates/Setpoints", moduleStates);
+        Logger.recordOutput("SwerveChassisSpeeds/Setpoints", discreteSpeeds);
 
-    // publisher.set(new SwerveModuleState[] {
-    //     frontLeftState,
-    //     frontRightState,
-    //     backLeftState,
-    //     backRightState
-    // });
+        SwerveModuleState frontLeftState = moduleStates[0];
+        SwerveModuleState frontRightState = moduleStates[1];
+        SwerveModuleState backLeftState = moduleStates[2];
+        SwerveModuleState backRightState = moduleStates[3];
 
-    this.frontLeftModule.setModuleState(frontLeftState);
-    this.frontRightModule.setModuleState(frontRightState);
-    this.backLeftModule.setModuleState(backLeftState);
-    this.backRightModule.setModuleState(backRightState);
-  }
+        this.frontLeftModule.setModuleState(frontLeftState);
+        this.frontRightModule.setModuleState(frontRightState);
+        this.backLeftModule.setModuleState(backLeftState);
+        this.backRightModule.setModuleState(backRightState);
+    }
 
-  /**
-   * Example command factory method.
-   *
-   * @return a command
-   */
-  public Command exampleMethodCommand() {
-    // Inline construction of command goes here.
-    // Subsystem::RunOnce implicitly requires `this` subsystem.
-    return runOnce(
-        () -> {
-          /* one-time action goes here */
-        });
-  }
+    public void zeroGyro() {
+        this.resetPose(
+            new Pose2d(
+                this.poseEstimator.getEstimatedPose().getTranslation(),
+                Rotation2d.kZero
+            )
+        );
+    }
 
-  /**
-   * An example method querying a boolean state of the subsystem (for example, a
-   * digital sensor).
-   *
-   * @return value of some boolean subsystem state, such as a digital sensor.
-   */
-  public boolean exampleCondition() {
-    // Query some boolean state, such as a digital sensor.
-    return false;
-  }
+    public void resetPose(Pose2d pose) {
+        this.poseEstimator.resetPose(pose, getModulePositions());
+    }
 
-  @Override
-  public void simulationPeriodic() {
-    // This method will be called once per scheduler run during simulation
-    this.periodic();
-  }
+    @AutoLogOutput(key = "Odometry/Robot")
+    public Pose2d getPose() {
+        return this.poseEstimator.getEstimatedPose();
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        this.periodic();
+    }
 }

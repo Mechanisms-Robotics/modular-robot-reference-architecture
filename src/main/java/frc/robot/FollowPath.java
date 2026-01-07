@@ -1,7 +1,5 @@
 package frc.robot;
 
-import static frc.robot.CONSTANTS.PATH_FOLLOWER_P_THETA;
-
 import java.util.Optional;
 
 import choreo.trajectory.SwerveSample;
@@ -21,7 +19,6 @@ public class FollowPath extends Command {
 
   private final Trajectory<SwerveSample> trajectory;
   private final Drivetrain drivetrain;
-  private final PoseEstimator8736 poseEstimator;
   private final boolean resetPose;
 
   private final Timer timer = new Timer();
@@ -30,16 +27,14 @@ public class FollowPath extends Command {
   public FollowPath(
       Trajectory<SwerveSample> trajectory,
       Drivetrain drivetrain,
-      PoseEstimator8736 poseEstimator,
       boolean resetPose) {
 
     this.trajectory = trajectory;
     this.drivetrain = drivetrain;
-    this.poseEstimator = poseEstimator;
     this.resetPose = resetPose;
 
     Constraints thetaProfile = new TrapezoidProfile.Constraints(
-        CONSTANTS.MAX_ANGULAR_RAD_PER_SEC, CONSTANTS.MAX_ANGULAR_RAD_PER_SEC * 2);
+        CONSTANTS.DriveConstants.ANGLE_MAX_ACCELERATION, CONSTANTS.DriveConstants.ANGLE_MAX_ACCELERATION);
 
     ProfiledPIDController thetaController =
         new ProfiledPIDController(CONSTANTS.PATH_FOLLOWER_P_THETA, 0, 0, thetaProfile);
@@ -71,10 +66,7 @@ public class FollowPath extends Command {
         // TODO: Why would this ever happen? Should we handle it differently?
         throw new IllegalStateException("Trajectory has no initial pose!");
       }
-      this.drivetrain.setModulesToEncoders();
-      this.poseEstimator.initialize(
-          initialPose.get(),
-          this.drivetrain);
+      this.drivetrain.resetPose(initialPose.get());
     }
   }
 
@@ -100,7 +92,7 @@ public class FollowPath extends Command {
 
     ChassisSpeeds commandedSpeeds =
         this.holonomicController.calculate(
-            this.poseEstimator.getPose(),
+            this.drivetrain.getPose(),
             swerveSample.get().getPose(),
             desiredLinearVelocity,
             swerveSample.get().getPose().getRotation()

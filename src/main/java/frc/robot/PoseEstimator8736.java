@@ -1,72 +1,158 @@
 package frc.robot;
 
-import com.reduxrobotics.sensors.canandgyro.Canandgyro;
+import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Twist2d;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import frc.robot.subsystems.drivetrain.Drivetrain;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 
-/*
- * TEST PLAN:
- * 
- * Determine where to initialize the pose estimator.
- * Test output of getModulePositions to make sure they are correct.
+/**
+ * Utility class for managing swerve drive pose estimation. Encapsulates the SwerveDrivePoseEstimator
+ * and handles odometry updates, vision measurements, and gyro integration.
  */
-
 public class PoseEstimator8736 {
-    private static final int GYRO_CAN_ID = 9;
-    private final Canandgyro gyro = new Canandgyro(GYRO_CAN_ID);
 
-    private SwerveDrivePoseEstimator swervePoseEstimator;
-    private Drivetrain drivetrain;
+    private final SwerveDriveKinematics kinematics;
+    private final SwerveDrivePoseEstimator poseEstimator;
 
-    // TODO: Where do we call this from and do we need to make sure drivetrain encoders are set first?
-    // Can we just call this whenever we call setModulesToEncoders? Should they be called together?
-    public void initialize(Pose2d pose, Drivetrain drivetrain) {
-        double yawInRotations = pose.getRotation().getDegrees() / 360.0; // between 0.0 and 1.0
-        this.gyro.setYaw(yawInRotations);
-        this.drivetrain = drivetrain;
-        this.swervePoseEstimator = new SwerveDrivePoseEstimator(
-            drivetrain.getKinematics(),
-            pose.getRotation(), // initial gyro angle  TODO: Should I use the actual gyro angle instead?
-            drivetrain.getModulePositions(),
-            pose);
+    private Rotation2d rawGyroRotation = Rotation2d.kZero;
+    private SwerveModulePosition[] lastModulePositions = // For delta tracking
+        new SwerveModulePosition[] {
+            new SwerveModulePosition(),
+            new SwerveModulePosition(),
+            new SwerveModulePosition(),
+            new SwerveModulePosition(),
+        };
+
+    /**
+     * Creates a new PoseEstimator.
+     *
+     * @param kinematics The swerve drive kinematics
+     * @param initialGyroRotation The initial gyro rotation
+     * @param initialPose The initial pose estimate
+     */
+    public PoseEstimator8736(
+        SwerveDriveKinematics kinematics,
+        Rotation2d initialGyroRotation,
+        Pose2d initialPose
+    ) {
+        this.kinematics = kinematics;
+        this.rawGyroRotation = initialGyroRotation;
+        this.poseEstimator = new SwerveDrivePoseEstimator(
+            kinematics,
+            rawGyroRotation,
+            lastModulePositions,
+            initialPose
+        );
     }
 
-    public void zeroGyro() {
-        // also resets the pose estimator, if it has been previously initialized
-        
-        Pose2d startingPose = null;
-        if (this.swervePoseEstimator != null) {
-            startingPose = getPose();
-            startingPose = new Pose2d(
-                startingPose.getX(),
-                startingPose.getY(),
-                new Rotation2d(0.0));
+    /**
+     * Updates the pose estimator with odometry data.
+     *
+     * @param modulePositions The current module positions
+     * @param gyroRotation The current gyro rotation (or null to use kinematics)
+     * @param timestamp The timestamp of this sample
+     */
+    public void updateOdometry(
+        SwerveModulePosition[] modulePositions,
+        Rotation2d gyroRotation,
+        double timestamp
+    ) {
+        // Calculate module deltas
+        SwerveModulePosition[] moduleDeltas = new SwerveModulePosition[4];
+        for (int moduleIndex = 0; moduleIndex < 4; moduleIndex++) {
+            moduleDeltas[moduleIndex] = new SwerveModulePosition(
+                modulePositions[moduleIndex].distanceMeters -
+                    lastModulePositions[moduleIndex].distanceMeters,
+                modulePositions[moduleIndex].angle
+            );
+            lastModulePositions[moduleIndex] = modulePositions[moduleIndex];
         }
 
-        this.gyro.setYaw(0.0);
-
-        if (startingPose != null && this.drivetrain != null) {
-            initialize(startingPose, this.drivetrain);
+        // Update gyro angle
+        if (gyroRotation != null) {
+            // Use the real gyro angle
+            rawGyroRotation = gyroRotation;
+        } else {
+            // Use the angle delta from the kinematics and module deltas
+            Twist2d twist = kinematics.toTwist2d(moduleDeltas);
+            rawGyroRotation = rawGyroRotation.plus(
+                new Rotation2d(twist.dtheta)
+            );
         }
-    }
-    
-    public Pose2d getPose() {
-        return this.swervePoseEstimator.getEstimatedPosition();
+
+        // Apply update to pose estimator
+        poseEstimator.updateWithTime(
+            timestamp,
+            rawGyroRotation,
+            modulePositions
+        );
     }
 
-    public double getGyroYaw() {
-        return this.gyro.getYaw(); // returns yaw in rotations
+    /**
+     * Adds a vision measurement to the pose estimator.
+     *
+     * @param visionRobotPoseMeters The vision-measured robot pose
+     * @param timestampSeconds The timestamp of the vision measurement
+     * @param visionMeasurementStdDevs The standard deviations of the vision measurement
+     */
+    public void addVisionMeasurement(
+        Pose2d visionRobotPoseMeters,
+        double timestampSeconds,
+        Matrix<N3, N1> visionMeasurementStdDevs
+    ) {
+        poseEstimator.addVisionMeasurement(
+            visionRobotPoseMeters,
+            timestampSeconds,
+            visionMeasurementStdDevs
+        );
     }
 
-    public void addVisionMeasurement(Pose2d pose, double timestampSeconds) {
-        this.swervePoseEstimator.addVisionMeasurement(pose, timestampSeconds);
+    /**
+     * Adds a vision measurement to the pose estimator.
+     *
+     * @param visionRobotPoseMeters The vision-measured robot pose
+     * @param timestampSeconds The timestamp of the vision measurement
+     */
+    public void addVisionMeasurement(
+        Pose2d visionRobotPoseMeters,
+        double timestampSeconds
+    ) {
+        poseEstimator.addVisionMeasurement(
+            visionRobotPoseMeters,
+            timestampSeconds
+        );
     }
 
-    public void addOdometryMeasurement(SwerveModulePosition[] positions) {
-        this.swervePoseEstimator.update(this.gyro.getRotation2d(), positions);
+    /**
+     * Resets the pose estimator to a specific pose.
+     *
+     * @param pose The new pose
+     * @param modulePositions The current module positions
+     */
+    public void resetPose(Pose2d pose, SwerveModulePosition[] modulePositions) {
+        poseEstimator.resetPosition(rawGyroRotation, modulePositions, pose);
+    }
+
+    /**
+     * Returns the current estimated pose.
+     *
+     * @return The current pose estimate
+     */
+    public Pose2d getEstimatedPose() {
+        return poseEstimator.getEstimatedPosition();
+    }
+
+    /**
+     * Returns the current raw gyro rotation.
+     *
+     * @return The raw gyro rotation
+     */
+    public Rotation2d getRawGyroRotation() {
+        return rawGyroRotation;
     }
 }

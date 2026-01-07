@@ -4,98 +4,150 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static frc.robot.CONSTANTS.*;
+import static frc.robot.CONSTANTS.DriveConstants;
+
+import choreo.Choreo;
+import choreo.trajectory.SwerveSample;
+import choreo.trajectory.Trajectory;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.subsystems.drivetrain.DrivetrainController;
-import choreo.Choreo;
-import choreo.trajectory.Trajectory;
-import choreo.trajectory.SwerveSample;
-import static frc.robot.CONSTANTS.*;
-
+import frc.robot.subsystems.drivetrain.GyroIO;
+import frc.robot.subsystems.drivetrain.GyroIORedux;
+import frc.robot.subsystems.drivetrain.ModuleIOSim;
+import frc.robot.subsystems.drivetrain.ModuleIOTalonFXRedux;
 import java.util.Optional;
 
 public class RobotContainer {
 
-  private final Drivetrain drivetrain = new Drivetrain();
-  private final PoseEstimator8736 poseEstimator = new PoseEstimator8736();
-  private final DrivetrainController drivetrainController = new DrivetrainController(poseEstimator);
+    private final Drivetrain drivetrain;
+    private final DrivetrainController drivetrainController;
 
-  private final CommandPS4Controller controller = new CommandPS4Controller(CONTROLLER_PORT);
-
-  public RobotContainer() {
-    // TODO: Think about where to initialize all of this properly
-    this.poseEstimator.initialize(new Pose2d(), this.drivetrain);
-    this.drivetrain.setPoseEstimator(this.poseEstimator);
-    configureBindings();
-    generateAutos();
-  }
-
-  public void setSwerveModulesToEncoders() {
-    this.drivetrain.setModulesToEncoders();
-  }
-
-  public void zeroGyro() {
-    this.poseEstimator.zeroGyro();
-  }
-
-  private void configureBindings() {
-    controller.cross().onTrue(new InstantCommand(
-      () -> {
-        this.poseEstimator.zeroGyro();
-      }
-    ));
-
-    this.drivetrain.setDefaultCommand(
-      new RunCommand(
-          () -> {
-              double forward = -this.controller.getLeftY(); // Negative to match FRC convention
-              double strafe = -this.controller.getLeftX();
-              double rotation = -this.controller.getRightX();
-
-              // apply deadbands and scaling
-
-              forward = Math.abs(forward) > DEADBAND ? forward : 0.0;
-              strafe = Math.abs(strafe) > DEADBAND ? strafe : 0.0;
-              rotation = Math.abs(rotation) > DEADBAND ? rotation : 0.0;
-
-              ChassisSpeeds speeds = new ChassisSpeeds(
-                  forward*forward*forward*MAX_SPEED_METERS_PER_SEC,
-                  strafe*strafe*strafe* MAX_SPEED_METERS_PER_SEC,
-                  rotation*rotation*rotation*MAX_ANGULAR_RAD_PER_SEC
-              );
-
-              // convert to robot-oriented coordinates and pass to swerve subsystem
-              ChassisSpeeds robotOriented = this.drivetrainController.fieldToRobotChassisSpeeds(speeds);
-              this.drivetrain.setDesiredState(robotOriented);
-          },
-          this.drivetrain
-      )
-    );
-  }
-
-  private Command testAuto = null;
-
-  private void generateAutos() {
-    Optional<Trajectory<SwerveSample>> trajectory = Choreo.loadTrajectory("Test Path");
-    this.testAuto = new FollowPath(
-        trajectory.get(),
-        this.drivetrain,
-        this.poseEstimator,
-        true
+    private final CommandPS4Controller controller = new CommandPS4Controller(
+        CONTROLLER_PORT
     );
 
-    System.out.println("*** Loaded Test Path autonomous ***");
-  }
+    public RobotContainer() {
+        // TODO: Think about where to initialize all of this properly
+        if (CONSTANTS.CURRENT_MODE == CONSTANTS.SIM_MODE) {
+            this.drivetrain = new Drivetrain(
+                new GyroIO() {},
+                new ModuleIOSim(DriveConstants.FRONT_LEFT),
+                new ModuleIOSim(DriveConstants.FRONT_RIGHT),
+                new ModuleIOSim(DriveConstants.BACK_LEFT),
+                new ModuleIOSim(DriveConstants.BACK_RIGHT)
+            );
+        } else {
+            this.drivetrain = new Drivetrain(
+                new GyroIORedux(),
+                new ModuleIOTalonFXRedux(DriveConstants.FRONT_LEFT),
+                new ModuleIOTalonFXRedux(DriveConstants.FRONT_RIGHT),
+                new ModuleIOTalonFXRedux(DriveConstants.BACK_LEFT),
+                new ModuleIOTalonFXRedux(DriveConstants.BACK_RIGHT)
+            );
+        }
+        this.drivetrainController = new DrivetrainController(this.drivetrain);
+        configureBindings();
+        generateAutos();
+    }
 
-  public Command getAutonomousCommand() {
-    return testAuto;
-    //return Commands.print("No autonomous command configured");
-  }
+    private void configureBindings() {
+        controller
+            .cross()
+            .onTrue(
+                new InstantCommand(() -> {
+                    this.drivetrain.zeroGyro();
+                })
+            );
+
+        this.drivetrain.setDefaultCommand(
+            new RunCommand(
+                () -> {
+                    double forward = -this.controller.getLeftY(); // Negative to match FRC convention
+                    double strafe = -this.controller.getLeftX();
+                    Translation2d driveSpeeds = getDriveVelocity(
+                        forward,
+                        strafe
+                    );
+                    double rotation;
+                    if (CONSTANTS.CURRENT_MODE == CONSTANTS.Mode.SIM) {
+                        rotation = -this.controller.getRawAxis(3); // Why is sim different then driverstation?
+                    } else {
+                        rotation = -this.controller.getRightX();
+                    }
+
+                    // apply deadbands and scaling
+                    rotation = MathUtil.applyDeadband(
+                        rotation,
+                        CONSTANTS.DriveConstants.DEADBAND
+                    );
+
+                    rotation = Math.copySign(rotation * rotation, rotation);
+
+                    ChassisSpeeds speeds = new ChassisSpeeds(
+                        driveSpeeds.getX() *
+                            CONSTANTS.DriveConstants.SPEED_AT_12_VOLTS.in(
+                                MetersPerSecond
+                            ),
+                        driveSpeeds.getY() *
+                            CONSTANTS.DriveConstants.SPEED_AT_12_VOLTS.in(
+                                MetersPerSecond
+                            ),
+                        (rotation *
+                                (CONSTANTS.DriveConstants.SPEED_AT_12_VOLTS.in(
+                                        MetersPerSecond
+                                    ))) /
+                            CONSTANTS.DriveConstants.DRIVE_BASE_RADIUS
+                    );
+
+                    // convert to robot-oriented coordinates and pass to swerve subsystem
+                    ChassisSpeeds robotOriented =
+                        this.drivetrainController.fieldToRobotChassisSpeeds(
+                            speeds
+                        );
+                    this.drivetrain.setDesiredState(robotOriented);
+                },
+                this.drivetrain
+            )
+        );
+    }
+
+    private Command testAuto = null;
+
+    private void generateAutos() {
+        Optional<Trajectory<SwerveSample>> trajectory = Choreo.loadTrajectory(
+            "Test Path"
+        );
+        this.testAuto = new FollowPath(trajectory.get(), this.drivetrain, true);
+
+        System.out.println("*** Loaded Test Path autonomous ***");
+    }
+
+    public Command getAutonomousCommand() {
+        return testAuto;
+        //return Commands.print("No autonomous command configured");
+    }
+
+    private static Translation2d getDriveVelocity(double x, double y) {
+        double linearMag = MathUtil.applyDeadband(
+            Math.hypot(x, y),
+            DriveConstants.DEADBAND
+        );
+        Rotation2d direction = new Rotation2d(Math.atan2(y, x));
+        linearMag = linearMag * linearMag;
+        return new Pose2d(Translation2d.kZero, direction)
+            .transformBy(new Transform2d(linearMag, 0.0, Rotation2d.kZero))
+            .getTranslation();
+    }
 }
-
