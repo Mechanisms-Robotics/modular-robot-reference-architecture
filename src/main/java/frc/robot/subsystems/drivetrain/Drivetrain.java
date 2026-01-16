@@ -200,4 +200,31 @@ public class Drivetrain extends SubsystemBase {
     public void simulationPeriodic() {
         this.periodic();
     }
+    
+    /** Runs the drive in a straight line with the specified drive output. */
+    public void runCharacterization(double output) {
+        /** TODO: run characterization (current control?) */
+    }
+
+    /** Returns the average velocity of the modules in rotations/sec (Phoenix native units). */
+    public double getFFCharacterizationVelocity() {
+        double output = 0.0;
+        /** TODO: get Feed Forward characterization velocity from modules */
+        return output;
+    }
+
+    /** Returns the position of each module in radians. */
+    public double[] getWheelRadiusCharacterizationPositions() {
+        double[] values = new double[4];
+        values[0] = this.frontLeftModule.getWheelRadiusCharacterizationPosition();
+        values[1] = this.frontRightModule.getWheelRadiusCharacterizationPosition();
+        values[2] = this.backLeftModule.getWheelRadiusCharacterizationPosition();
+        values[3] = this.backRightModule.getWheelRadiusCharacterizationPosition();
+        return values;
+    }
+
+    /** Returns the raw gyro rotation read by the IMU */
+    public Rotation2d getGyroRotation() {
+        return gyroInputs.yawPosition;
+    }
 }
