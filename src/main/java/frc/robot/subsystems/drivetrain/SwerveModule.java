@@ -6,6 +6,7 @@ import static frc.robot.CONSTANTS.*;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.util.Units;
 import frc.robot.CONSTANTS;
 import frc.robot.CONSTANTS.DriveConstants;
 
@@ -55,10 +56,8 @@ public class SwerveModule {
 
     /** Runs the module with the specified output while controlling to zero degrees. */
     public void runCharacterization(double output) {
-        /* TODO: implement:
-        io.runDriveOpenLoop(output);
-        io.runTurnPosition(Rotation2d.kZero);
-        */
+        io.setDriveOpenLoop(output);
+        io.setTurnPosition(Rotation2d.kZero);
     }
 
     public double[] getOdometryTimestamps() {
@@ -81,5 +80,10 @@ public class SwerveModule {
     /** Returns the module position in radians. */
     public double getWheelRadiusCharacterizationPosition() {
         return inputs.drivePositionRad;
+    }
+
+    /** Returns the module velocity in rotations/sec (Phoenix native units). */
+    public double getFFCharacterizationVelocity() {
+        return Units.radiansToRotations(inputs.driveVelocityRadPerSec);
     }
 }

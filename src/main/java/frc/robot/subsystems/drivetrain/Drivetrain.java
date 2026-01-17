@@ -203,12 +203,20 @@ public class Drivetrain extends SubsystemBase {
     
     /** Runs the drive in a straight line with the specified drive output. */
     public void runCharacterization(double output) {
-        /** TODO: run characterization (current control?) */
+        this.frontLeftModule.runCharacterization(output);
+        this.frontRightModule.runCharacterization(output);
+        this.backLeftModule.runCharacterization(output);
+        this.backRightModule.runCharacterization(output);
     }
 
     /** Returns the average velocity of the modules in rotations/sec (Phoenix native units). */
     public double getFFCharacterizationVelocity() {
         double output = 0.0;
+        output += this.frontLeftModule.getFFCharacterizationVelocity();
+        output += this.frontRightModule.getFFCharacterizationVelocity();
+        output += this.backLeftModule.getFFCharacterizationVelocity();
+        output += this.backRightModule.getFFCharacterizationVelocity();
+        output /= 4;
         /** TODO: get Feed Forward characterization velocity from modules */
         return output;
     }
