@@ -78,8 +78,14 @@ public class RobotContainer {
 
             this.vision = new Vision(
                 this.drivetrain.poseEstimator,
-                new PoseCameraIOPhoton(VisionConstants.CAMERA1_NAME, VisionConstants.CAMERA1_TRANSFORM3D),
-                new PoseCameraIOPhoton(VisionConstants.CAMERA2_NAME, VisionConstants.CAMERA2_TRANSFORM3D)
+                new PoseCameraIOPhoton(
+                    VisionConstants.CAMERA1_NAME,
+                    VisionConstants.ROBOT_TO_CAMERA1
+                ),
+                new PoseCameraIOPhoton(
+                    VisionConstants.CAMERA2_NAME,
+                    VisionConstants.ROBOT_TO_CAMERA2
+                )
             );
         }
 

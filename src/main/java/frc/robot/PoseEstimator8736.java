@@ -32,7 +32,9 @@ public class PoseEstimator8736 {
             new SwerveModulePosition(),
         };
 
-    private boolean visionEnabled = true; // default to true because we're goated cuh
+    // Vision fusion is on by default; FollowPath turns it off during path
+    // following so a bad tag sighting can't yank the pose mid-trajectory.
+    private boolean visionEnabled = true;
 
     /**
      * Creates a new PoseEstimator.

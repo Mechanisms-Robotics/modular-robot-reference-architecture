@@ -26,14 +26,17 @@ public class PoseCameraIOSim implements PoseCameraIO {
 
     private final PhotonCamera camera;
     private final String cameraName;
-    private final Transform3d cameraToRobot;
+
+    // Transform FROM the robot center TO the camera lens (PhotonVision's
+    // "robotToCamera" convention) — see PoseCameraIOPhoton.
+    private final Transform3d robotToCamera;
 
     private final PhotonPoseEstimator photonEstimator;
 
     // PoseEstimator is passed in because the sim camera needs the robot's current position to update.
-    public PoseCameraIOSim(String cameraName, Transform3d cameraToRobot, PoseEstimator8736 poseEstimator) {
+    public PoseCameraIOSim(String cameraName, Transform3d robotToCamera, PoseEstimator8736 poseEstimator) {
         this.cameraName = cameraName;
-        this.cameraToRobot = cameraToRobot;
+        this.robotToCamera = robotToCamera;
 
         this.visionSim = new VisionSystemSim("visionSim");
         this.visionSim.addAprilTags(FieldConstants.APRILTAG_FIELD_LAYOUT);
@@ -53,11 +56,11 @@ public class PoseCameraIOSim implements PoseCameraIO {
 
         this.cameraSim.enableDrawWireframe(true);
 
-        this.visionSim.addCamera(cameraSim, cameraToRobot);
+        this.visionSim.addCamera(cameraSim, robotToCamera);
 
         this.photonEstimator = new PhotonPoseEstimator(
-            FieldConstants.APRILTAG_FIELD_LAYOUT, 
-            this.cameraToRobot);
+            FieldConstants.APRILTAG_FIELD_LAYOUT,
+            this.robotToCamera);
 
         this.poseEstimator = poseEstimator;
     }

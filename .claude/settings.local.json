@@ -1,0 +1,47 @@
+{
+  "enabledMcpjsonServers": [
+    "ct"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(ct *)",
+      "mcp__ct__ct_lookup",
+      "mcp__ct__ct_callers",
+      "mcp__ct__ct_callees",
+      "mcp__ct__ct_spine",
+      "mcp__ct__ct_describe",
+      "mcp__ct__ct_outline",
+      "mcp__ct__ct_read",
+      "mcp__ct__ct_search",
+      "mcp__ct__ct_grep",
+      "mcp__ct__ct_glob",
+      "mcp__ct__ct_references",
+      "mcp__ct__ct_remember",
+      "mcp__ct__ct_recall",
+      "mcp__ct__ct_forget",
+      "mcp__ct__ct_memories",
+      "mcp__ct__ct_vsearch",
+      "mcp__ct__ct_changed",
+      "mcp__ct__ct_status",
+      "mcp__ct__ct_insert_point",
+      "mcp__ct__ct_extract_function",
+      "mcp__ct__ct_splice",
+      "mcp__ct__ct_delete_function",
+      "mcp__ct__ct_map",
+      "mcp__ct__ct_entry",
+      "mcp__ct__ct_hot",
+      "mcp__ct__ct_survey",
+      "mcp__ct__ct_path",
+      "mcp__ct__ct_risk",
+      "mcp__ct__ct_trace",
+      "mcp__ct__ct_themes",
+      "mcp__ct__ct_owners",
+      "mcp__ct__ct_contributions",
+      "mcp__ct__ct_blame",
+      "mcp__ct__ct_conventions",
+      "mcp__ct__ct_move_symbol",
+      "mcp__ct__ct_move_lines",
+      "mcp__ct__ct_findings"
+    ]
+  }
+}

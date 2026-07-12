@@ -68,33 +68,40 @@ public class CONSTANTS {
 
     // MARK: Vision
     public static class VisionConstants {
-        public static final String CAMERA1_NAME = "PhotonCameraLeft";
+        // Robot chassis footprint, used to locate the cameras relative to the
+        // robot center (which is the origin of the robot coordinate frame).
         public static final double LENGTH_METERS = 0.7;
         public static final double WIDTH_METERS = 0.695;
-    
-        public static final Transform3d CAMERA1_TRANSFORM3D = new Transform3d(
-            -LENGTH_METERS / 2.0 + Units.inchesToMeters(10.0), // forward distances from the center of the robot
-            WIDTH_METERS / 2.0, // leftward distance from the center of the robot
-            Units.inchesToMeters(18.5), //tuned
-            new Rotation3d(
-                0, 
-                0, 
-                Math.toRadians(90)    // camera is mounted sideways
-            )
-        );
-    
-        public static final String CAMERA2_NAME = "PhotonCameraRight";
-        public static final Transform3d CAMERA2_TRANSFORM3D = new Transform3d(
-            -LENGTH_METERS / 2.0 + Units.inchesToMeters(9.5),
-            -WIDTH_METERS / 2.0, 
-            Units.inchesToMeters(18.5), 
+
+        // Transforms are FROM the robot center TO the camera lens
+        // (PhotonVision's "robotToCamera" convention): +X forward, +Y left,
+        // +Z up, yaw CCW-positive.
+        public static final String CAMERA1_NAME = "PhotonCameraLeft";
+        public static final Transform3d ROBOT_TO_CAMERA1 = new Transform3d(
+            -LENGTH_METERS / 2.0 + Units.inchesToMeters(10.0), // forward of robot center
+            WIDTH_METERS / 2.0, // left of robot center
+            Units.inchesToMeters(18.5), // above the floor; tuned
             new Rotation3d(
                 0,
                 0,
-                Math.toRadians(-90)
+                Math.toRadians(90) // camera is mounted sideways, facing left
             )
         );
 
+        public static final String CAMERA2_NAME = "PhotonCameraRight";
+        public static final Transform3d ROBOT_TO_CAMERA2 = new Transform3d(
+            -LENGTH_METERS / 2.0 + Units.inchesToMeters(9.5),
+            -WIDTH_METERS / 2.0,
+            Units.inchesToMeters(18.5),
+            new Rotation3d(
+                0,
+                0,
+                Math.toRadians(-90) // facing right
+            )
+        );
+
+        // Reject any vision pose estimate more than this far off the floor —
+        // a tag solution that puts the robot half a meter in the air is junk.
         public static final double Z_THRESHOLD = 0.5;
     }
     public static final int GYRO_CAN_ID = 9;

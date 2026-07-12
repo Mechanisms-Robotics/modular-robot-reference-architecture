@@ -20,145 +20,147 @@ import frc.robot.util.FieldUtil;
 
 public class FollowPath extends Command {
 
-  private final Trajectory<SwerveSample> trajectory;
-  private final Drivetrain drivetrain;
-  private final boolean resetPose;
-  private boolean isRedAlliance;
-  private final boolean isMirrored;
+    private final Trajectory<SwerveSample> trajectory;
+    private final Drivetrain drivetrain;
+    private final boolean resetPose;
+    private boolean isRedAlliance;
+    private final boolean isMirrored;
 
-  private final Timer timer = new Timer();
-  private final HolonomicDriveController holonomicController;
-  
-  public FollowPath(
-      Trajectory<SwerveSample> trajectory,
-      Drivetrain drivetrain,
-      boolean resetPose,
-      boolean isMirrored) {
+    private final Timer timer = new Timer();
+    private final HolonomicDriveController holonomicController;
 
-    this.trajectory = trajectory;
-    this.drivetrain = drivetrain;
-    this.resetPose = resetPose;
-    this.isMirrored = isMirrored;
+    public FollowPath(
+            Trajectory<SwerveSample> trajectory,
+            Drivetrain drivetrain,
+            boolean resetPose,
+            boolean isMirrored) {
 
-    Constraints thetaProfile = new TrapezoidProfile.Constraints(
-        CONSTANTS.DriveConstants.ANGLE_MAX_ACCELERATION, CONSTANTS.DriveConstants.ANGLE_MAX_ACCELERATION);
+        this.trajectory = trajectory;
+        this.drivetrain = drivetrain;
+        this.resetPose = resetPose;
+        this.isMirrored = isMirrored;
 
-    ProfiledPIDController thetaController =
-        new ProfiledPIDController(CONSTANTS.PATH_FOLLOWER_P_THETA, 0, 0, thetaProfile);
-    thetaController.enableContinuousInput(-Math.PI, Math.PI);
+        Constraints thetaProfile = new TrapezoidProfile.Constraints(
+            CONSTANTS.DriveConstants.ANGLE_MAX_ACCELERATION,
+            CONSTANTS.DriveConstants.ANGLE_MAX_ACCELERATION);
 
-    holonomicController = new HolonomicDriveController(
-        new PIDController(CONSTANTS.PATH_FOLLOWER_P_X, 0, 0),
-        new PIDController(CONSTANTS.PATH_FOLLOWER_P_Y, 0, 0),
-        thetaController
-    );
+        ProfiledPIDController thetaController = new ProfiledPIDController(
+            CONSTANTS.PATH_FOLLOWER_P_THETA, 0, 0, thetaProfile);
+        thetaController.enableContinuousInput(-Math.PI, Math.PI);
 
-    super.addRequirements(drivetrain);
-  }
+        holonomicController = new HolonomicDriveController(
+            new PIDController(CONSTANTS.PATH_FOLLOWER_P_X, 0, 0),
+            new PIDController(CONSTANTS.PATH_FOLLOWER_P_Y, 0, 0),
+            thetaController
+        );
 
-  public FollowPath(
-    Trajectory<SwerveSample> trajectory,
-    Drivetrain drivetrain,
-    boolean resetPose) {
-    this(trajectory, drivetrain, resetPose, false);
-  }
-
-
-  // ------------------------
-  // COMMAND LIFECYCLE (2025)
-  // ------------------------
-
-  @Override
-  public void initialize() {
-
-    timer.reset();
-    timer.start();
-
-    // disable vision updates while following a path
-    this.drivetrain.poseEstimator.setVisionEnabled(false);
-
-    // Sampled once at path start: Choreo mirrors the trajectory for red, and
-    // the alliance cannot change mid-path.
-    this.isRedAlliance = FieldUtil.isRedAlliance();
-
-    if (this.resetPose) {
-      // rotate the initial pose if we're on the red alliance
-      Optional<Pose2d> initialPose = trajectory.getInitialPose(this.isRedAlliance); 
-
-      if (initialPose.isEmpty()) {
-        // TODO: Why would this ever happen? Should we handle it differently?
-        throw new IllegalStateException("Trajectory has no initial pose!");
-      }
-      this.drivetrain.resetPose(
-        this.isMirrored ? FieldUtil.flipPose(initialPose.get()) : initialPose.get());
+        super.addRequirements(drivetrain);
     }
-  }
 
-  @Override
-  public void execute() {
-    double t = this.timer.get();
-
-    Optional<SwerveSample> swerveSample = this.trajectory.sampleAt(
-      t, isRedAlliance);
-    if (swerveSample.isEmpty()) {
-      return; // TODO: Why would this ever happen? Should we handle it differently?
+    public FollowPath(
+            Trajectory<SwerveSample> trajectory,
+            Drivetrain drivetrain,
+            boolean resetPose) {
+        this(trajectory, drivetrain, resetPose, false);
     }
-    SwerveSample sample;
 
-    if (this.isMirrored) {
-      sample = new SwerveSample(
-        swerveSample.get().t,
-        swerveSample.get().x,
-        FieldConstants.WIDTH - swerveSample.get().y,
-        -swerveSample.get().heading,
-        swerveSample.get().vx,
-        -swerveSample.get().vy,
-        -swerveSample.get().omega,
-        swerveSample.get().ax,
-        -swerveSample.get().ay,
-        swerveSample.get().alpha,
-        swerveSample.get().moduleForcesX(),
-        new double[]{
-          -swerveSample.get().moduleForcesY()[0],
-          -swerveSample.get().moduleForcesY()[1],
-          -swerveSample.get().moduleForcesY()[2],
-          -swerveSample.get().moduleForcesY()[3]
+    // ------------------------
+    // COMMAND LIFECYCLE (2025)
+    // ------------------------
+
+    @Override
+    public void initialize() {
+
+        timer.reset();
+        timer.start();
+
+        // disable vision updates while following a path
+        this.drivetrain.poseEstimator.setVisionEnabled(false);
+
+        // Sampled once at path start: Choreo mirrors the trajectory for red, and
+        // the alliance cannot change mid-path.
+        this.isRedAlliance = FieldUtil.isRedAlliance();
+
+        if (this.resetPose) {
+            // rotate the initial pose if we're on the red alliance
+            Optional<Pose2d> initialPose = trajectory.getInitialPose(
+                this.isRedAlliance);
+
+            if (initialPose.isEmpty()) {
+                // TODO: Why would this ever happen? Should we handle it differently?
+                throw new IllegalStateException("Trajectory has no initial pose!");
+            }
+            this.drivetrain.resetPose(
+                this.isMirrored
+                    ? FieldUtil.flipPose(initialPose.get())
+                    : initialPose.get());
         }
-      );
-    } else {
-      sample = swerveSample.get();
     }
 
-    // TODO: This loses the capability of Choreo to control the wheels optimally. See the choreo docs.
+    @Override
+    public void execute() {
+        double t = this.timer.get();
 
-    // See https://docs.wpilib.org/en/stable/docs/software/advanced-controls/trajectories/holonomic.html
+        Optional<SwerveSample> swerveSample = this.trajectory.sampleAt(
+            t, isRedAlliance);
+        if (swerveSample.isEmpty()) {
+            return; // TODO: Why would this ever happen? Should we handle it differently?
+        }
+        SwerveSample sample;
 
-    ChassisSpeeds sampleSpeeds = sample.getChassisSpeeds();
+        if (this.isMirrored) {
+            sample = new SwerveSample(
+                swerveSample.get().t,
+                swerveSample.get().x,
+                FieldConstants.WIDTH - swerveSample.get().y,
+                -swerveSample.get().heading,
+                swerveSample.get().vx,
+                -swerveSample.get().vy,
+                -swerveSample.get().omega,
+                swerveSample.get().ax,
+                -swerveSample.get().ay,
+                swerveSample.get().alpha,
+                swerveSample.get().moduleForcesX(),
+                new double[]{
+                    -swerveSample.get().moduleForcesY()[0],
+                    -swerveSample.get().moduleForcesY()[1],
+                    -swerveSample.get().moduleForcesY()[2],
+                    -swerveSample.get().moduleForcesY()[3]
+                }
+            );
+        } else {
+            sample = swerveSample.get();
+        }
 
-    double desiredLinearVelocity = Math.sqrt(
-        sampleSpeeds.vxMetersPerSecond * sampleSpeeds.vxMetersPerSecond +
-        sampleSpeeds.vyMetersPerSecond * sampleSpeeds.vyMetersPerSecond);
+        // TODO: This loses the capability of Choreo to control the wheels optimally. See the choreo docs.
 
-    ChassisSpeeds commandedSpeeds =
-        this.holonomicController.calculate(
+        // See https://docs.wpilib.org/en/stable/docs/software/advanced-controls/trajectories/holonomic.html
+
+        ChassisSpeeds sampleSpeeds = sample.getChassisSpeeds();
+
+        double desiredLinearVelocity = Math.sqrt(
+            sampleSpeeds.vxMetersPerSecond * sampleSpeeds.vxMetersPerSecond +
+            sampleSpeeds.vyMetersPerSecond * sampleSpeeds.vyMetersPerSecond);
+
+        ChassisSpeeds commandedSpeeds = this.holonomicController.calculate(
             this.drivetrain.getPose(),
             sample.getPose(),
             desiredLinearVelocity,
             sample.getPose().getRotation()
         );
 
-    this.drivetrain.setDesiredState(commandedSpeeds);  
-  }
+        this.drivetrain.setDesiredState(commandedSpeeds);
+    }
 
-  @Override
-  public void end(boolean interrupted) {
-    this.drivetrain.setDesiredState(new ChassisSpeeds()); // TODO: There may be cases where we don't want the robot to stop!
-    this.timer.stop();
-  }
+    @Override
+    public void end(boolean interrupted) {
+        this.drivetrain.setDesiredState(new ChassisSpeeds()); // TODO: There may be cases where we don't want the robot to stop!
+        this.timer.stop();
+    }
 
-  @Override
-  public boolean isFinished() {
-    // TODO: If precition is important we may need an end-state controller.
-    return this.timer.get() >= this.trajectory.getTotalTime(); // TODO: I assume total time is in seconds?
-  }  
+    @Override
+    public boolean isFinished() {
+        // TODO: If precition is important we may need an end-state controller.
+        return this.timer.get() >= this.trajectory.getTotalTime(); // TODO: I assume total time is in seconds?
+    }
 }

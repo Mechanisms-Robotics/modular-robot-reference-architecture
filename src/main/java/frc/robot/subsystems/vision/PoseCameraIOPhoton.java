@@ -17,19 +17,23 @@ import frc.robot.CONSTANTS.FieldConstants;
 public class PoseCameraIOPhoton implements PoseCameraIO {
     private final PhotonCamera camera;
     private final String cameraName;
-    private final Transform3d cameraToRobot;
 
-    private PhotonPoseEstimator photonEstimator;
+    // Transform FROM the robot center TO the camera lens (PhotonVision's
+    // "robotToCamera" convention). Getting this backwards silently produces
+    // mirrored/offset pose estimates, so the name must match the direction.
+    private final Transform3d robotToCamera;
+
+    private final PhotonPoseEstimator photonEstimator;
 
     // The cameraName here is used to identify the camera in network tables
-    public PoseCameraIOPhoton(String cameraName, Transform3d cameraToRobot) {
+    public PoseCameraIOPhoton(String cameraName, Transform3d robotToCamera) {
         this.camera = new PhotonCamera(cameraName);
         this.cameraName = cameraName;
-        this.cameraToRobot = cameraToRobot;
+        this.robotToCamera = robotToCamera;
 
         this.photonEstimator = new PhotonPoseEstimator(
             FieldConstants.APRILTAG_FIELD_LAYOUT,
-            this.cameraToRobot);
+            this.robotToCamera);
     }
 
     @Override
