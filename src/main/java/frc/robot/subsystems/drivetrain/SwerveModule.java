@@ -12,12 +12,22 @@ import org.littletonrobotics.junction.Logger;
 
 import frc.robot.CONSTANTS;
 
+/**
+ * One swerve corner: a drive motor, a steer (turn) motor, and an absolute
+ * azimuth encoder, hidden behind a {@link ModuleIO}.
+ *
+ * <p>This class is deliberately hardware-agnostic — everything here is in
+ * WPILib-native units (meters, radians). Unit conversion from motor rotations
+ * happens in the IO implementations. The Drivetrain calls {@link #periodic()}
+ * once per loop (under the odometry lock) and then commands each module via
+ * {@link #setModuleState}.
+ */
 public class SwerveModule {
 
     private final ModuleIO io;
     private final ModuleIOInputsAutoLogged inputs =
         new ModuleIOInputsAutoLogged();
-    private final String moduleName;
+    private final String moduleName; // e.g. "Front Left"; used in log keys
 
     public SwerveModule(ModuleIO io, String name) {
         this.io = io; // may be real or simulated
@@ -45,10 +55,15 @@ public class SwerveModule {
     }
 
     public void setModuleState(SwerveModuleState state) {
-        // get the current position and optimize the state
+        // Optimize: if the target angle is more than 90 degrees away, flip
+        // the wheel 180 and drive backwards instead — never rotate the
+        // azimuth further than a quarter turn.
         state.optimize(inputs.turnPosition);
 
-        // calculate a speed scale factor (cosine compensation)
+        // Cosine compensation: while the wheel is still rotating toward its
+        // setpoint, only the component of its velocity along the target
+        // direction is useful — scale speed down by cos(error) so a
+        // mid-rotation wheel doesn't drag the robot sideways.
         double scaleFactor = state.angle.minus(inputs.turnPosition).getCos();
 
         // set the drive velocity (convert m/s to rad/s)
@@ -72,6 +87,11 @@ public class SwerveModule {
         return this.inputs.odometryTimestamps;
     }
 
+    /**
+     * Returns all high-frequency odometry samples captured since the last
+     * loop (one per PhoenixOdometryThread tick), converted from wheel radians
+     * to meters traveled. Index-aligned with {@link #getOdometryTimestamps}.
+     */
     public SwerveModulePosition[] getOdometryPositions() {
         int sampleCount = this.inputs.odometryDrivePositionsRad.length;
         SwerveModulePosition[] positions = new SwerveModulePosition[sampleCount];

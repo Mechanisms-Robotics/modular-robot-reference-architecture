@@ -8,6 +8,12 @@ import frc.robot.CONSTANTS;
 import frc.robot.CONSTANTS.DriveConstants;
 import java.util.Queue;
 
+/**
+ * GyroIO for the CTRE Pigeon 2. Alternative to {@link GyroIORedux} — swap it
+ * in from RobotContainer if the robot carries a Pigeon instead of a
+ * Canandgyro. Phoenix yaw is reported in degrees and this class converts to
+ * rotations/radians at the boundary so downstream code never sees degrees.
+ */
 public class GyroIOCTRE implements GyroIO {
 
     private final Pigeon2 gyro = new Pigeon2(CONSTANTS.GYRO_CAN_ID);

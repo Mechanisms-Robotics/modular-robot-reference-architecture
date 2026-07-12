@@ -20,12 +20,27 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
+/**
+ * The swerve drivetrain subsystem.
+ *
+ * <p>Architecture: this class owns four {@link SwerveModule}s and a
+ * {@link GyroIO}, each of which reads hardware (or simulation) through the
+ * AdvantageKit IO layer. Callers hand us a desired {@link ChassisSpeeds} via
+ * {@link #setDesiredState}; every loop {@link #periodic()} pulls fresh sensor
+ * inputs, feeds the pose estimator, and pushes per-module setpoints back down.
+ *
+ * <p>Coordinates follow WPILib conventions: +X is robot-forward, +Y is
+ * robot-left, and positive rotation is counterclockwise. Field coordinates
+ * have their origin at the blue alliance corner.
+ */
 public class Drivetrain extends SubsystemBase {
 
-    // Per WPILib documentation +X is forward and +Y is left (oriented to the robot)
-    // Positive rotation is counterclockwise
-
     SwerveDriveKinematics kinematics;
+
+    // The most recent commanded chassis speeds (robot-relative). periodic()
+    // converts these to module states each loop, so a stale command keeps
+    // being applied until someone commands otherwise — commands must
+    // explicitly send zero speeds to stop the robot.
     ChassisSpeeds desiredChassisSpeeds;
     
     // Public so RobotContainer can hand it to the Vision subsystem and
@@ -41,8 +56,16 @@ public class Drivetrain extends SubsystemBase {
     private final GyroIOInputsAutoLogged gyroInputs =
         new GyroIOInputsAutoLogged();
 
+    // Guards everything shared with PhoenixOdometryThread: the thread fills
+    // per-signal sample queues at 100-250 Hz while periodic() drains them at
+    // 50 Hz. Hold this only while reading/writing inputs — never across
+    // control logic — and ALWAYS unlock (a missing unlock here once starved
+    // the odometry thread forever).
     public static final Lock odometryLock = new ReentrantLock();
-    
+
+    // True: periodic() runs the modules closed-loop toward
+    // desiredChassisSpeeds. False: a characterization routine has taken over
+    // and is driving the modules open-loop directly (see runCharacterization).
     private boolean driveClosedLoop = true;
 
     /**
@@ -97,7 +120,10 @@ public class Drivetrain extends SubsystemBase {
             )
         );
 
-        /* TODO: Ask Alex to add comments about the odometry thread when we do a code review. */
+        // Start the high-frequency odometry sampler. By this point every
+        // module IO (and the gyro IO) has already registered its signals in
+        // its constructor — start() is a no-op if nothing registered, which
+        // is exactly what happens in simulation.
         PhoenixOdometryThread.getInstance().start();
 
         this.poseEstimator = new PoseEstimator8736(
@@ -109,8 +135,13 @@ public class Drivetrain extends SubsystemBase {
         this.desiredChassisSpeeds = new ChassisSpeeds(0.0, 0.0, 0.0);
     }
 
+    /**
+     * Commands the drivetrain to the given ROBOT-RELATIVE chassis speeds.
+     * Field-relative callers should convert first (see DrivetrainController).
+     * The command persists until replaced; send zero speeds to stop.
+     */
     public void setDesiredState(ChassisSpeeds desiredChassisSpeeds) {
-        this.driveClosedLoop = true;
+        this.driveClosedLoop = true; // take back control from characterization
         this.desiredChassisSpeeds = desiredChassisSpeeds;
     }
 
@@ -224,6 +255,12 @@ public class Drivetrain extends SubsystemBase {
         }
     }
 
+    /**
+     * Re-zeros the robot's heading so "away from the driver" becomes the new
+     * forward, keeping the translation estimate. On red the driver faces the
+     * -X field direction (blue-origin coordinates), so their "forward" is a
+     * 180 degree field heading.
+     */
     public void resetHeading() {
         resetPose(new Pose2d(
             getPose().getTranslation(),
@@ -262,7 +299,6 @@ public class Drivetrain extends SubsystemBase {
         output += this.backLeftModule.getFFCharacterizationVelocity();
         output += this.backRightModule.getFFCharacterizationVelocity();
         output /= 4;
-        /** TODO: get Feed Forward characterization velocity from modules */
         return output;
     }
 

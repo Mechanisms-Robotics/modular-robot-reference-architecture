@@ -9,6 +9,13 @@ import frc.robot.CONSTANTS.DriveConstants;
 import frc.robot.CONSTANTS.Timeouts;
 import java.util.Queue;
 
+/**
+ * GyroIO for the Redux Canandgyro. Yaw is registered with the
+ * PhoenixOdometryThread as a generic (supplier-based) signal so heading
+ * samples line up with the high-frequency wheel odometry samples.
+ * Redux devices buffer their CAN frames internally, so reads here are
+ * non-blocking.
+ */
 public class GyroIORedux implements GyroIO {
 
     private final Canandgyro gyro = new Canandgyro(CONSTANTS.GYRO_CAN_ID);
