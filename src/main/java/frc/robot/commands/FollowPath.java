@@ -40,8 +40,11 @@ public class FollowPath extends Command {
         this.resetPose = resetPose;
         this.isMirrored = isMirrored;
 
+        // Constraints are (maxVelocity, maxAcceleration) in rad/s and rad/s^2.
+        // This previously passed ANGLE_MAX_ACCELERATION for both, letting the
+        // profile demand 20 rad/s of rotation (2.5x our configured max).
         Constraints thetaProfile = new TrapezoidProfile.Constraints(
-            CONSTANTS.DriveConstants.ANGLE_MAX_ACCELERATION,
+            CONSTANTS.DriveConstants.ANGLE_MAX_VELOCITY,
             CONSTANTS.DriveConstants.ANGLE_MAX_ACCELERATION);
 
         ProfiledPIDController thetaController = new ProfiledPIDController(
@@ -109,23 +112,31 @@ public class FollowPath extends Command {
         SwerveSample sample;
 
         if (this.isMirrored) {
+            // Reflect the sample across the field's long (X) axis: Y and
+            // heading flip sign, so every Y-component and every angular
+            // quantity (heading, omega, AND alpha) must be negated. The
+            // reflection also turns left-side modules into right-side ones,
+            // so the per-module force arrays swap FL<->FR and BL<->BR
+            // (Choreo module order: FL, FR, BL, BR).
+            SwerveSample original = swerveSample.get();
+            double[] forcesX = original.moduleForcesX();
+            double[] forcesY = original.moduleForcesY();
             sample = new SwerveSample(
-                swerveSample.get().t,
-                swerveSample.get().x,
-                FieldConstants.WIDTH - swerveSample.get().y,
-                -swerveSample.get().heading,
-                swerveSample.get().vx,
-                -swerveSample.get().vy,
-                -swerveSample.get().omega,
-                swerveSample.get().ax,
-                -swerveSample.get().ay,
-                swerveSample.get().alpha,
-                swerveSample.get().moduleForcesX(),
-                new double[]{
-                    -swerveSample.get().moduleForcesY()[0],
-                    -swerveSample.get().moduleForcesY()[1],
-                    -swerveSample.get().moduleForcesY()[2],
-                    -swerveSample.get().moduleForcesY()[3]
+                original.t,
+                original.x,
+                FieldConstants.WIDTH - original.y,
+                -original.heading,
+                original.vx,
+                -original.vy,
+                -original.omega,
+                original.ax,
+                -original.ay,
+                -original.alpha,
+                new double[] {
+                    forcesX[1], forcesX[0], forcesX[3], forcesX[2]
+                },
+                new double[] {
+                    -forcesY[1], -forcesY[0], -forcesY[3], -forcesY[2]
                 }
             );
         } else {
@@ -154,6 +165,11 @@ public class FollowPath extends Command {
 
     @Override
     public void end(boolean interrupted) {
+        // Re-enable vision fusion. initialize() turned it off for the
+        // duration of the path; without this line the robot would run the
+        // entire rest of the match blind to AprilTags.
+        this.drivetrain.poseEstimator.setVisionEnabled(true);
+
         this.drivetrain.setDesiredState(new ChassisSpeeds()); // TODO: There may be cases where we don't want the robot to stop!
         this.timer.stop();
     }
