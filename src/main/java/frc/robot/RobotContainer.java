@@ -6,6 +6,9 @@ package frc.robot;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
+import choreo.Choreo;
+import choreo.trajectory.SwerveSample;
+import choreo.trajectory.Trajectory;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -23,6 +26,8 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import frc.robot.CONSTANTS.DriveConstants;
 import frc.robot.CONSTANTS.VisionConstants;
+import frc.robot.commands.DriveForward;
+import frc.robot.commands.FollowPath;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.subsystems.drivetrain.DrivetrainController;
 import frc.robot.subsystems.drivetrain.GyroIO;
@@ -33,6 +38,7 @@ import frc.robot.subsystems.vision.PoseCameraIOPhoton;
 import frc.robot.subsystems.vision.PoseCameraIOSim;
 import frc.robot.subsystems.vision.Vision;
 import java.util.HashMap;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -187,6 +193,16 @@ public class RobotContainer {
     private void publishAutoNames() {
         autos.put("None", () -> Commands.none());
 
+        // Trajectory-free mobility auto: works even if odometry/vision are
+        // misbehaving. 1.5 m/s for 2 s = ~3 m off the starting line.
+        autos.put("Drive Forward", () ->
+            new DriveForward(this.drivetrain, 1.5, 2.0));
+
+        // Choreo path autos: register only the trajectories that actually
+        // load, so a missing/renamed .traj file costs us the option instead
+        // of crashing robot code on boot.
+        registerChoreoAuto("Example Path");
+
         for (String name : autos.keySet()) {
             autoChooser.addOption(name, name);
         }
@@ -194,6 +210,26 @@ public class RobotContainer {
         autoChooser.setDefaultOption("None", "None");
 
         SmartDashboard.putData("Auto Chooser", autoChooser);
+    }
+
+    /**
+     * Loads a Choreo trajectory from src/main/deploy/choreo/<name>.traj and,
+     * if it exists, registers a FollowPath auto for it under the same name.
+     * The first path of an auto resets the pose estimate to its start point.
+     */
+    private void registerChoreoAuto(String trajectoryName) {
+        Optional<Trajectory<SwerveSample>> trajectory =
+            Choreo.loadTrajectory(trajectoryName);
+
+        if (trajectory.isPresent()) {
+            autos.put(trajectoryName, () ->
+                new FollowPath(trajectory.get(), this.drivetrain, true));
+        } else {
+            System.err.println(
+                "[RobotContainer] Choreo trajectory '" + trajectoryName +
+                "' not found in deploy/choreo — auto not registered."
+            );
+        }
     }
 
     /**
