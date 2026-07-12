@@ -18,11 +18,37 @@ import frc.robot.CONSTANTS.FieldConstants;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.util.FieldUtil;
 
+/**
+ * Follows a pre-planned Choreo trajectory with a holonomic feedback
+ * controller: each loop we sample the trajectory at the elapsed time, compare
+ * the sampled pose against our estimated pose, and command chassis speeds
+ * that chase the sample.
+ *
+ * <p>Two independent kinds of flipping can apply to a path:
+ * <ul>
+ *   <li><b>Alliance mirroring</b> — handled by Choreo itself via
+ *       {@code sampleAt(t, isRedAlliance)}.</li>
+ *   <li><b>{@code isMirrored}</b> — OUR left/right reflection across the
+ *       field's long axis, for reusing one path on the other side of the
+ *       field for the same alliance.</li>
+ * </ul>
+ *
+ * <p>Known limitation (see TODO below): HolonomicDriveController assumes the
+ * robot travels in the direction its pose faces, which is not generally true
+ * for a swerve path that strafes — Choreo's per-sample vx/vy feedforwards are
+ * collapsed to a scalar speed. Paths whose heading tracks the direction of
+ * travel work fine; heavy-strafe paths will track loosely.
+ */
 public class FollowPath extends Command {
 
     private final Trajectory<SwerveSample> trajectory;
     private final Drivetrain drivetrain;
+
+    // Whether to teleport the pose estimate to the path's start point when
+    // the command starts. Use for the FIRST path of auto only; mid-sequence
+    // paths must keep the estimator's continuity.
     private final boolean resetPose;
+
     private boolean isRedAlliance;
     private final boolean isMirrored;
 
@@ -67,13 +93,13 @@ public class FollowPath extends Command {
         this(trajectory, drivetrain, resetPose, false);
     }
 
-    // ------------------------
-    // COMMAND LIFECYCLE (2025)
-    // ------------------------
+    // -----------------
+    // COMMAND LIFECYCLE
+    // -----------------
 
     @Override
     public void initialize() {
-
+        // The trajectory is indexed by time-since-start; the timer is that clock.
         timer.reset();
         timer.start();
 

@@ -50,6 +50,15 @@ import edu.wpi.first.units.measure.MomentOfInertia;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.RobotBase;
 
+/**
+ * Every tunable number, CAN ID, and physical dimension for this robot, in one
+ * place. Nested classes group constants per area. This file is per-robot:
+ * templates for each chassis live in src/config/constants/ and the build is
+ * supposed to copy the right one here (see build.gradle — currently disabled).
+ *
+ * <p>The all-caps class name is a deliberate, grandfathered exception to
+ * naming conventions so configuration reads stand out at call sites.
+ */
 public class CONSTANTS {
 
     //RobotContainer
@@ -68,33 +77,40 @@ public class CONSTANTS {
 
     // MARK: Vision
     public static class VisionConstants {
-        public static final String CAMERA1_NAME = "PhotonCameraLeft";
+        // Robot chassis footprint, used to locate the cameras relative to the
+        // robot center (which is the origin of the robot coordinate frame).
         public static final double LENGTH_METERS = 0.7;
         public static final double WIDTH_METERS = 0.695;
-    
-        public static final Transform3d CAMERA1_TRANSFORM3D = new Transform3d(
-            -LENGTH_METERS / 2.0 + Units.inchesToMeters(10.0), // forward distances from the center of the robot
-            WIDTH_METERS / 2.0, // leftward distance from the center of the robot
-            Units.inchesToMeters(18.5), //tuned
-            new Rotation3d(
-                0, 
-                0, 
-                Math.toRadians(90)    // camera is mounted sideways
-            )
-        );
-    
-        public static final String CAMERA2_NAME = "PhotonCameraRight";
-        public static final Transform3d CAMERA2_TRANSFORM3D = new Transform3d(
-            -LENGTH_METERS / 2.0 + Units.inchesToMeters(9.5),
-            -WIDTH_METERS / 2.0, 
-            Units.inchesToMeters(18.5), 
+
+        // Transforms are FROM the robot center TO the camera lens
+        // (PhotonVision's "robotToCamera" convention): +X forward, +Y left,
+        // +Z up, yaw CCW-positive.
+        public static final String CAMERA1_NAME = "PhotonCameraLeft";
+        public static final Transform3d ROBOT_TO_CAMERA1 = new Transform3d(
+            -LENGTH_METERS / 2.0 + Units.inchesToMeters(10.0), // forward of robot center
+            WIDTH_METERS / 2.0, // left of robot center
+            Units.inchesToMeters(18.5), // above the floor; tuned
             new Rotation3d(
                 0,
                 0,
-                Math.toRadians(-90)
+                Math.toRadians(90) // camera is mounted sideways, facing left
             )
         );
 
+        public static final String CAMERA2_NAME = "PhotonCameraRight";
+        public static final Transform3d ROBOT_TO_CAMERA2 = new Transform3d(
+            -LENGTH_METERS / 2.0 + Units.inchesToMeters(9.5),
+            -WIDTH_METERS / 2.0,
+            Units.inchesToMeters(18.5),
+            new Rotation3d(
+                0,
+                0,
+                Math.toRadians(-90) // facing right
+            )
+        );
+
+        // Reject any vision pose estimate more than this far off the floor —
+        // a tag solution that puts the robot half a meter in the air is junk.
         public static final double Z_THRESHOLD = 0.5;
     }
     public static final int GYRO_CAN_ID = 9;
@@ -425,11 +441,16 @@ public class CONSTANTS {
         public static final double MM_EXPO_KV = 0.12 * STEER_GEAR_RATIO;
         public static final double MM_EXPO_KA = 0.1;
 
-        public static final double DRIVE_CAN_FRAME_FREQUENCY = 50.0;
-        public static final double DRIVE_CAN_FRAME_PERIOD =
-            1.0 / DRIVE_CAN_FRAME_FREQUENCY;
-        public static final double DRIVE_CAN_FRAME_PERIOD_SEC = 0.01;
-        public static final double GRYO_CAN_FRAME_FREQUENCY = 0.01;
+        // Status-frame rates for non-odometry signals. Phoenix APIs take a
+        // FREQUENCY in Hz; Redux APIs take a PERIOD in seconds — the names
+        // say which is which so they never get swapped again.
+        public static final double DRIVE_CAN_FRAME_FREQUENCY = 50.0; // Hz
+        // Canandmag absolute-position frame period (100 Hz).
+        public static final double ENCODER_CAN_FRAME_PERIOD_SEC = 0.01;
+        // Canandgyro angular position/velocity frame period (100 Hz).
+        public static final double GYRO_CAN_FRAME_PERIOD_SEC = 0.01;
+        // Motor temperature changes slowly; poll it gently to save bus time.
+        public static final double TEMPERATURE_CAN_FRAME_FREQUENCY = 4.0; // Hz
     }
 
     public static class Timeouts {

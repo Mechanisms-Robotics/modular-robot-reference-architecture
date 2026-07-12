@@ -15,13 +15,24 @@ import edu.wpi.first.math.numbers.N3;
 /**
  * Utility class for managing swerve drive pose estimation. Encapsulates the SwerveDrivePoseEstimator
  * and handles odometry updates, vision measurements, and gyro integration.
+ *
+ * <p>Two estimators run side by side:
+ * <ul>
+ *   <li>{@code poseEstimator} — the real estimate: odometry + gyro fused with
+ *       (optionally gated) vision measurements. This is what the robot acts on.</li>
+ *   <li>{@code simulatedPoseEstimator} — identical odometry input but NO
+ *       vision. In simulation it serves as ground truth for rendering the
+ *       simulated cameras (vision can't be allowed to feed itself). On a real
+ *       robot it's a cheap odometry-only reference trace in the logs.</li>
+ * </ul>
  */
 public class PoseEstimator8736 {
 
     private final SwerveDriveKinematics kinematics;
     private final SwerveDrivePoseEstimator poseEstimator;
 
-    private final SwerveDrivePoseEstimator simulatedPoseEstimator; // only use in simulation
+    // Odometry-only twin of poseEstimator; see class javadoc.
+    private final SwerveDrivePoseEstimator simulatedPoseEstimator;
 
     private Rotation2d rawGyroRotation = Rotation2d.kZero;
     private SwerveModulePosition[] lastModulePositions = // For delta tracking

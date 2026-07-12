@@ -20,6 +20,15 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 
+/**
+ * Mode lifecycle for the robot. Keep logic out of here — this class only
+ * wires up AdvantageKit logging, owns the dashboard-level choosers, and
+ * schedules/cancels the autonomous command at mode transitions. Everything
+ * robot-specific lives in RobotContainer and the subsystems.
+ *
+ * <p>Extends LoggedRobot (AdvantageKit): every input the code reads goes
+ * through Logger.processInputs, which is what makes log replay possible.
+ */
 public class Robot extends LoggedRobot {
   private Command autonomousCommand;
   private final RobotContainer robotContainer;
@@ -27,8 +36,10 @@ public class Robot extends LoggedRobot {
   private boolean lastResetPoseSelected = false;
 
   public Robot() {
+    // Phoenix's own hoot logger would double-log every CAN signal next to
+    // AdvantageKit; keep it off.
     SignalLogger.enableAutoLogging(false);
-    
+
     switch (CONSTANTS.CURRENT_MODE) {
       case REAL:
         // Running on a real robot, log to a USB stick ("/U/logs")
@@ -58,10 +69,16 @@ public class Robot extends LoggedRobot {
     resetPoseChooser.setDefaultOption("None", false);
     resetPoseChooser.addOption("All", true);
     SmartDashboard.putData("Reset Pose", resetPoseChooser);
+
+    // Placeholder until the drive team picks an auto while disabled; never
+    // null so mode transitions don't have to null-check.
     this.autonomousCommand = Commands.none();
+
     DriverStation.silenceJoystickConnectionWarning(true);
-    // Sets the selected command to None even if elastic already set the auto when the robot turns on
-    // Prevents the robot from running an auto that was not intentionally selected after the robot turned on
+
+    // Force the auto selection back to "None" on boot, even if the dashboard
+    // (Elastic) remembered a selection from last time. Prevents the robot
+    // from running an auto nobody intentionally selected this power-on.
     SmartDashboard.putString("Auto Chooser/selected", "None");
   }
 
@@ -82,12 +99,9 @@ public class Robot extends LoggedRobot {
   }
 
   @Override
-  public void robotInit() {
-  }
-  
-  @Override
   public void disabledInit() {}
-  
+
+
   @Override
   public void disabledPeriodic() {
     // Rebuild the autonomous command whenever the drive team picks a

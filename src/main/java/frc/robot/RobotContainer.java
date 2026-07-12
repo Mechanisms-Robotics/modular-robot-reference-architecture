@@ -35,19 +35,30 @@ import frc.robot.subsystems.vision.Vision;
 import java.util.HashMap;
 import java.util.function.Supplier;
 
+/**
+ * Owns and wires together every subsystem, the driver controls, and the
+ * autonomous options. This is the composition root: hardware vs. simulation
+ * IO implementations are chosen here (and only here) based on CURRENT_MODE.
+ */
 public class RobotContainer {
     public final Drivetrain drivetrain;
 
+    // Never read after construction — the Vision subsystem registers itself
+    // with the CommandScheduler and does all its work in periodic(). The
+    // field keeps a strong reference and documents ownership.
     @SuppressWarnings("unused")
     private final Vision vision;
     private final DrivetrainController drivetrainController;
-    
+
+    // The chooser holds auto NAMES (not Commands): building the Command is
+    // deferred to a Supplier so a fresh instance is constructed each time the
+    // selection changes — scheduled commands should not be reused.
     public final SendableChooser<String> autoChooser = new SendableChooser<>();
 
     private final CommandPS4Controller controller = new CommandPS4Controller(
         CONSTANTS.CONTROLLER_PORT
     );
-    
+
     private final HashMap<String, Supplier<Command>> autos = new HashMap<>();
 
     public RobotContainer() {
@@ -102,6 +113,8 @@ public class RobotContainer {
     }
 
     private void configureBindings() {
+        // Cross (X) re-zeros "forward" to wherever the driver is now facing —
+        // the standard fix when field-oriented drive gets skewed mid-match.
         this.controller
             .cross()
             .onTrue(
@@ -109,11 +122,15 @@ public class RobotContainer {
                     this.drivetrain.resetHeading();
                 })
             );
-        
+
+        // Default teleop drive: field-oriented, with squared inputs for fine
+        // control near center and full speed at the edges.
         this.drivetrain.setDefaultCommand(
             new RunCommand(
                 () -> {
-                    double forward = -this.controller.getLeftY(); // Negative to match FRC convention
+                    // Stick axes are +down/+right; robot axes are +X forward,
+                    // +Y left — hence both negations.
+                    double forward = -this.controller.getLeftY();
                     double strafe = -this.controller.getLeftX();
                     Translation2d driveSpeeds = getDriveVelocity(
                         forward,
@@ -130,6 +147,10 @@ public class RobotContainer {
 
                     rotation = Math.copySign(rotation * rotation, rotation);
 
+                    // Scale unitless [-1, 1] stick values to physical speeds.
+                    // Max angular rate = max wheel speed at the drivebase
+                    // radius (the fastest we can spin without any wheel
+                    // exceeding its linear speed limit).
                     ChassisSpeeds speeds = new ChassisSpeeds(
                         driveSpeeds.getX() *
                             CONSTANTS.DriveConstants.SPEED_AT_12_VOLTS.in(
@@ -158,20 +179,29 @@ public class RobotContainer {
         );
     }
 
+    /**
+     * Registers every autonomous routine and publishes the chooser. Add new
+     * autos to the map here; the chooser and Robot.disabledPeriodic pick them
+     * up by name automatically.
+     */
     private void publishAutoNames() {
-        // add commands to the autos hashmap here
         autos.put("None", () -> Commands.none());
-        
 
         for (String name : autos.keySet()) {
             autoChooser.addOption(name, name);
         }
 
         autoChooser.setDefaultOption("None", "None");
-        
+
         SmartDashboard.putData("Auto Chooser", autoChooser);
     }
 
+    /**
+     * Builds a FRESH command for the named auto ("None"/unknown builds a
+     * no-op). Called from Robot.disabledPeriodic whenever the drive team
+     * changes the selection; the command's name is set to the auto name so
+     * callers can detect selection changes by comparing names.
+     */
     public Command getAutonomousCommand(String name) {
         Command autoCommand = this.autos.getOrDefault(name, () -> Commands.none()).get();
 
@@ -179,6 +209,12 @@ public class RobotContainer {
         return autoCommand;
     }
 
+    /**
+     * Converts raw stick (x, y) into a drive translation direction+magnitude:
+     * deadband on the combined magnitude (so diagonal creep is filtered too),
+     * then square the magnitude for fine low-speed control while preserving
+     * the stick direction exactly.
+     */
     private static Translation2d getDriveVelocity(double x, double y) {
         double linearMag = MathUtil.applyDeadband(
             Math.hypot(x, y),
@@ -186,6 +222,9 @@ public class RobotContainer {
         );
         Rotation2d direction = new Rotation2d(Math.atan2(y, x));
         linearMag = linearMag * linearMag;
+
+        // Build a unit pose facing the stick direction and push it forward by
+        // the magnitude — a compact way to get (mag * cos, mag * sin).
         return new Pose2d(Translation2d.kZero, direction)
             .transformBy(new Transform2d(linearMag, 0.0, Rotation2d.kZero))
             .getTranslation();

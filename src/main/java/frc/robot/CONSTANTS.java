@@ -50,6 +50,15 @@ import edu.wpi.first.units.measure.MomentOfInertia;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.RobotBase;
 
+/**
+ * Every tunable number, CAN ID, and physical dimension for this robot, in one
+ * place. Nested classes group constants per area. This file is per-robot:
+ * templates for each chassis live in src/config/constants/ and the build is
+ * supposed to copy the right one here (see build.gradle — currently disabled).
+ *
+ * <p>The all-caps class name is a deliberate, grandfathered exception to
+ * naming conventions so configuration reads stand out at call sites.
+ */
 public class CONSTANTS {
 
     //RobotContainer
