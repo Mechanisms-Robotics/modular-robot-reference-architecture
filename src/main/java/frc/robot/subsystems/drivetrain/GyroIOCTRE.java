@@ -17,10 +17,12 @@ public class GyroIOCTRE implements GyroIO {
 
     public GyroIOCTRE() {
         // Configure update frequencies to mirror the Redux setup as closely as possible.
-        // Phoenix 6 uses per-signal update frequencies (Hz).
+        // Phoenix 6 setUpdateFrequency takes Hz. The old code passed the
+        // 0.01 s PERIOD constant here, i.e. 0.01 Hz — one angular-velocity
+        // frame every 100 seconds, so yawVelocityRadPerSec was frozen.
         gyro.getYaw().setUpdateFrequency(DriveConstants.ODOMETRY_FREQUENCY);
         gyro.getAngularVelocityZWorld().setUpdateFrequency(
-            DriveConstants.GRYO_CAN_FRAME_FREQUENCY
+            1.0 / DriveConstants.GYRO_CAN_FRAME_PERIOD_SEC
         );
 
         // Match prior behavior

@@ -432,11 +432,16 @@ public class CONSTANTS {
         public static final double MM_EXPO_KV = 0.12 * STEER_GEAR_RATIO;
         public static final double MM_EXPO_KA = 0.1;
 
-        public static final double DRIVE_CAN_FRAME_FREQUENCY = 50.0;
-        public static final double DRIVE_CAN_FRAME_PERIOD =
-            1.0 / DRIVE_CAN_FRAME_FREQUENCY;
-        public static final double DRIVE_CAN_FRAME_PERIOD_SEC = 0.01;
-        public static final double GRYO_CAN_FRAME_FREQUENCY = 0.01;
+        // Status-frame rates for non-odometry signals. Phoenix APIs take a
+        // FREQUENCY in Hz; Redux APIs take a PERIOD in seconds — the names
+        // say which is which so they never get swapped again.
+        public static final double DRIVE_CAN_FRAME_FREQUENCY = 50.0; // Hz
+        // Canandmag absolute-position frame period (100 Hz).
+        public static final double ENCODER_CAN_FRAME_PERIOD_SEC = 0.01;
+        // Canandgyro angular position/velocity frame period (100 Hz).
+        public static final double GYRO_CAN_FRAME_PERIOD_SEC = 0.01;
+        // Motor temperature changes slowly; poll it gently to save bus time.
+        public static final double TEMPERATURE_CAN_FRAME_FREQUENCY = 4.0; // Hz
     }
 
     public static class Timeouts {

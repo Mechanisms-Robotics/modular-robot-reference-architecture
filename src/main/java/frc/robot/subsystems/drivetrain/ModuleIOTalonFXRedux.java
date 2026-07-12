@@ -20,7 +20,6 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.reduxrobotics.frames.Frame;
-import com.reduxrobotics.frames.FrameData;
 import com.reduxrobotics.sensors.canandmag.Canandmag;
 import com.reduxrobotics.sensors.canandmag.CanandmagSettings;
 import edu.wpi.first.math.filter.Debouncer;
@@ -29,6 +28,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.CONSTANTS;
 import frc.robot.CONSTANTS.DriveConstants;
@@ -81,6 +81,7 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
     private final StatusSignal<AngularVelocity> driveVelocity;
     private final StatusSignal<Voltage> driveAppliedVolts;
     private final StatusSignal<Current> driveCurrent;
+    private final StatusSignal<Temperature> driveTemp;
 
     // Inputs from turn motor
     private final Frame<Double> turnAbsolutePosition;
@@ -89,6 +90,7 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
     private final StatusSignal<AngularVelocity> turnVelocity;
     private final StatusSignal<Voltage> turnAppliedVolts;
     private final StatusSignal<Current> turnCurrent;
+    private final StatusSignal<Temperature> turnTemp;
 
     // Connection debouncers
     private final Debouncer driveConnectedDebounce = new Debouncer(
@@ -183,8 +185,9 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
         //);
         CanandmagSettings settings = new CanandmagSettings();
         settings.setInvertDirection(constants.EncoderInverted);
+        // Redux setters take a PERIOD in seconds, not a frequency.
         settings.setPositionFramePeriod(
-            DriveConstants.DRIVE_CAN_FRAME_PERIOD_SEC
+            DriveConstants.ENCODER_CAN_FRAME_PERIOD_SEC
         );
         cancoder.setSettings(settings, CONSTANTS.Timeouts.STD_TIMEOUT_LONG);
 
@@ -201,6 +204,7 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
         this.driveVelocity = this.driveTalon.getVelocity();
         this.driveAppliedVolts = this.driveTalon.getMotorVoltage();
         this.driveCurrent = this.driveTalon.getSupplyCurrent();
+        this.driveTemp = this.driveTalon.getDeviceTemp();
 
         // Create turn status signals
         this.turnAbsolutePosition = this.cancoder.getAbsPositionFrame();
@@ -212,8 +216,14 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
         this.turnVelocity = this.turnTalon.getVelocity();
         this.turnAppliedVolts = this.turnTalon.getMotorVoltage();
         this.turnCurrent = this.turnTalon.getSupplyCurrent();
+        this.turnTemp = this.turnTalon.getDeviceTemp();
 
-        // Configure periodic frames
+        // Configure periodic frames. optimizeBusUtilizationForAll below
+        // DISABLES every status frame not explicitly given a frequency here,
+        // so any signal we read must appear in one of these groups — reading
+        // an unregistered signal returns frozen data. (The temperature
+        // signals were previously read ad hoc without registration and never
+        // updated after startup.)
         BaseStatusSignal.setUpdateFrequencyForAll(
             DriveConstants.ODOMETRY_FREQUENCY,
             this.drivePosition,
@@ -228,16 +238,23 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
             this.turnAppliedVolts,
             this.turnCurrent
         );
+        BaseStatusSignal.setUpdateFrequencyForAll(
+            DriveConstants.TEMPERATURE_CAN_FRAME_FREQUENCY,
+            this.driveTemp,
+            this.turnTemp
+        );
         ParentDevice.optimizeBusUtilizationForAll(
             this.driveTalon,
             this.turnTalon
         );
 
-        // Reset the turn motor position based on the can encoder
-        // Cast is safe as defined in the reducx docs
-        FrameData<?>[] data = Frame.waitForFrames(
-                Timeouts.STD_TIMEOUT_LONG,
-                this.turnAbsolutePosition
+        // Seed the turn motor's rotor position from the absolute encoder so
+        // module angles are correct from power-on. Blocking here is fine —
+        // this is construction, not the robot loop — but we must WAIT for the
+        // first absolute-position frame or we would seed from a default zero.
+        Frame.waitForFrames(
+            Timeouts.STD_TIMEOUT_LONG,
+            this.turnAbsolutePosition
         );
         tryUntilOk(10, () ->
             turnTalon.setPosition(
@@ -254,18 +271,20 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
             this.drivePosition,
             this.driveVelocity,
             this.driveAppliedVolts,
-            this.driveCurrent
+            this.driveCurrent,
+            this.driveTemp
         );
         var turnStatus = BaseStatusSignal.refreshAll(
             this.turnPosition,
             this.turnVelocity,
             this.turnAppliedVolts,
-            this.turnCurrent
+            this.turnCurrent,
+            this.turnTemp
         );
-        // var turnEncoderStatus = Frame.waitForFrames(
-        //     Timeouts.STD_TIMEOUT,
-        //     this.turnAbsolutePosition
-        // );
+        // Deliberately NOT calling Frame.waitForFrames here: it blocks the
+        // main loop up to the timeout per module (4 modules x 0.1 s = a
+        // wrecked 20 ms loop). The Canandmag pushes frames on its own; we
+        // just read the latest value below.
 
         // Update drive inputs
         inputs.driveConnected = this.driveConnectedDebounce.calculate(
@@ -279,16 +298,18 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
         );
         inputs.driveAppliedVolts = this.driveAppliedVolts.getValueAsDouble();
         inputs.driveCurrentAmps = this.driveCurrent.getValueAsDouble();
-        inputs.driveTempFahrenheit = this.driveTalon.getDeviceTemp().getValue().in(Fahrenheit);
+        inputs.driveTempFahrenheit = this.driveTemp.getValue().in(Fahrenheit);
 
         // Update turn inputs
         inputs.turnConnected = this.turnConnectedDebounce.calculate(
             turnStatus.isOK()
         );
+        // Was hardcoded to `true` when the blocking waitForFrames call above
+        // was removed, which silently masked encoder disconnects. The
+        // Canandmag tracks its own liveness; ask it directly.
         inputs.turnEncoderConnected =
             this.turnEncoderConnectedDebounce.calculate(
-                true
-                //turnEncoderStatus != null
+                this.cancoder.isConnected()
             );
         inputs.turnAbsolutePosition = Rotation2d.fromRotations(
             this.cancoder.getAbsPosition()
@@ -301,7 +322,7 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
         );
         inputs.turnAppliedVolts = this.turnAppliedVolts.getValueAsDouble();
         inputs.turnCurrentAmps = this.turnCurrent.getValueAsDouble();
-        inputs.turnTempFahrenheit = this.turnTalon.getDeviceTemp().getValue().in(Fahrenheit);
+        inputs.turnTempFahrenheit = this.turnTemp.getValue().in(Fahrenheit);
 
         // Update odometry inputs
         inputs.odometryTimestamps = this.timestampQueue.stream()

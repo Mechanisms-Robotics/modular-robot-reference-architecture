@@ -18,13 +18,16 @@ public class GyroIORedux implements GyroIO {
 
     public GyroIORedux() {
         // Configure the gyro
+        // Redux setters take a PERIOD in seconds (unlike Phoenix, which takes
+        // a frequency in Hz). Yaw runs at odometry rate for the high-frequency
+        // odometry thread; the rest run at the standard gyro frame rate.
         CanandgyroSettings settings = new CanandgyroSettings()
             .setYawFramePeriod(1.0 / DriveConstants.ODOMETRY_FREQUENCY)
             .setAngularPositionFramePeriod(
-                DriveConstants.GRYO_CAN_FRAME_FREQUENCY
+                DriveConstants.GYRO_CAN_FRAME_PERIOD_SEC
             )
             .setAngularVelocityFramePeriod(
-                DriveConstants.GRYO_CAN_FRAME_FREQUENCY
+                DriveConstants.GYRO_CAN_FRAME_PERIOD_SEC
             );
         gyro.setSettings(
             settings,
