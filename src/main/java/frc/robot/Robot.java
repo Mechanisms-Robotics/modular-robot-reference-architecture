@@ -81,11 +81,14 @@ public class Robot extends LoggedRobot {
   
   @Override
   public void disabledPeriodic() {
-    String autoName = this.robotContainer.autoChooser.getSelected();
-    if (this.autonomousCommand.getName() != null) {
-      if (!this.autonomousCommand.getName().equals(autoName)) {
-        this.autonomousCommand = this.robotContainer.getAutonomousCommand(autoName);
-      }
+    // Rebuild the autonomous command whenever the drive team picks a
+    // different auto on the dashboard. Building it while disabled (instead of
+    // in autonomousInit) means the command is ready the instant auto starts.
+    String selectedAuto = this.robotContainer.autoChooser.getSelected();
+    if (selectedAuto != null
+        && !selectedAuto.equals(this.autonomousCommand.getName())) {
+      this.autonomousCommand =
+          this.robotContainer.getAutonomousCommand(selectedAuto);
     }
   }
 

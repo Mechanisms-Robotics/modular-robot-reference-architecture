@@ -92,6 +92,12 @@ public class RobotContainer {
         this.drivetrainController = new DrivetrainController(this.drivetrain);
 
         configureBindings();
+
+        // Without this call the chooser is never populated and
+        // autoChooser.getSelected() returns null in disabledPeriodic —
+        // the "getName() is null" crash this file was hotfixed for.
+        publishAutoNames();
+
         SmartDashboard.putData("CommandScheduler", CommandScheduler.getInstance());
     }
 
