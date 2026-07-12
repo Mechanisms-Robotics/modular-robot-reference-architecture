@@ -4,40 +4,42 @@ import java.util.Optional;
 
 import choreo.trajectory.SwerveSample;
 import choreo.trajectory.Trajectory;
-import edu.wpi.first.math.controller.HolonomicDriveController;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.CONSTANTS;
-import frc.robot.CONSTANTS.FieldConstants;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.util.FieldUtil;
+import org.littletonrobotics.junction.Logger;
 
 /**
- * Follows a pre-planned Choreo trajectory with a holonomic feedback
- * controller: each loop we sample the trajectory at the elapsed time, compare
- * the sampled pose against our estimated pose, and command chassis speeds
- * that chase the sample.
+ * Follows a pre-planned Choreo trajectory.
+ *
+ * <p>Control law (the follower Choreo's docs recommend): take the sample's
+ * field-relative velocities (vx, vy, omega) as feedforward — they already
+ * encode everything the path optimizer knows about how the robot should move,
+ * including strafing — and add a proportional position correction per axis:
+ *
+ * <pre>
+ *   vx     = sample.vx    + kP * (sample.x - pose.x)
+ *   vy     = sample.vy    + kP * (sample.y - pose.y)
+ *   omega  = sample.omega + kP * wrap(sample.heading - pose.heading)
+ * </pre>
+ *
+ * This replaces the previous WPILib HolonomicDriveController approach, which
+ * collapsed (vx, vy) into a scalar speed pointed along the sample's heading —
+ * correct only when the robot travels nose-first, which swerve paths rarely do.
  *
  * <p>Two independent kinds of flipping can apply to a path:
  * <ul>
  *   <li><b>Alliance mirroring</b> — handled by Choreo itself via
  *       {@code sampleAt(t, isRedAlliance)}.</li>
  *   <li><b>{@code isMirrored}</b> — OUR left/right reflection across the
- *       field's long axis, for reusing one path on the other side of the
- *       field for the same alliance.</li>
+ *       field's long axis (see {@link #mirrorSample}), for reusing one path on
+ *       the other side of the field for the same alliance.</li>
  * </ul>
- *
- * <p>Known limitation (see TODO below): HolonomicDriveController assumes the
- * robot travels in the direction its pose faces, which is not generally true
- * for a swerve path that strafes — Choreo's per-sample vx/vy feedforwards are
- * collapsed to a scalar speed. Paths whose heading tracks the direction of
- * travel work fine; heavy-strafe paths will track loosely.
  */
 public class FollowPath extends Command {
 
@@ -53,7 +55,15 @@ public class FollowPath extends Command {
     private final boolean isMirrored;
 
     private final Timer timer = new Timer();
-    private final HolonomicDriveController holonomicController;
+
+    // Per-axis position feedback. Gains are 1/s: output velocity per meter
+    // (or radian) of error, added on top of the trajectory feedforward.
+    private final PIDController xController = new PIDController(
+        CONSTANTS.PATH_FOLLOWER_P_X, 0, 0);
+    private final PIDController yController = new PIDController(
+        CONSTANTS.PATH_FOLLOWER_P_Y, 0, 0);
+    private final PIDController headingController = new PIDController(
+        CONSTANTS.PATH_FOLLOWER_P_THETA, 0, 0);
 
     public FollowPath(
             Trajectory<SwerveSample> trajectory,
@@ -66,22 +76,9 @@ public class FollowPath extends Command {
         this.resetPose = resetPose;
         this.isMirrored = isMirrored;
 
-        // Constraints are (maxVelocity, maxAcceleration) in rad/s and rad/s^2.
-        // This previously passed ANGLE_MAX_ACCELERATION for both, letting the
-        // profile demand 20 rad/s of rotation (2.5x our configured max).
-        Constraints thetaProfile = new TrapezoidProfile.Constraints(
-            CONSTANTS.DriveConstants.ANGLE_MAX_VELOCITY,
-            CONSTANTS.DriveConstants.ANGLE_MAX_ACCELERATION);
-
-        ProfiledPIDController thetaController = new ProfiledPIDController(
-            CONSTANTS.PATH_FOLLOWER_P_THETA, 0, 0, thetaProfile);
-        thetaController.enableContinuousInput(-Math.PI, Math.PI);
-
-        holonomicController = new HolonomicDriveController(
-            new PIDController(CONSTANTS.PATH_FOLLOWER_P_X, 0, 0),
-            new PIDController(CONSTANTS.PATH_FOLLOWER_P_Y, 0, 0),
-            thetaController
-        );
+        // Heading error must wrap so a 350 -> 10 degree correction goes 20
+        // degrees the short way, not 340 degrees the long way.
+        this.headingController.enableContinuousInput(-Math.PI, Math.PI);
 
         super.addRequirements(drivetrain);
     }
@@ -93,6 +90,38 @@ public class FollowPath extends Command {
         this(trajectory, drivetrain, resetPose, false);
     }
 
+    /**
+     * Reflects a sample across the field's long (X) axis: every Y quantity
+     * and every angular quantity (heading, omega, alpha) negates, and the
+     * reflection turns left-side modules into right-side ones, so the
+     * per-module force arrays swap FL&lt;-&gt;FR and BL&lt;-&gt;BR (Choreo
+     * module order: FL, FR, BL, BR).
+     *
+     * <p>Static and package-visible so it is unit-testable.
+     */
+    static SwerveSample mirrorSample(SwerveSample sample, double fieldWidth) {
+        double[] forcesX = sample.moduleForcesX();
+        double[] forcesY = sample.moduleForcesY();
+        return new SwerveSample(
+            sample.t,
+            sample.x,
+            fieldWidth - sample.y,
+            -sample.heading,
+            sample.vx,
+            -sample.vy,
+            -sample.omega,
+            sample.ax,
+            -sample.ay,
+            -sample.alpha,
+            new double[] {
+                forcesX[1], forcesX[0], forcesX[3], forcesX[2]
+            },
+            new double[] {
+                -forcesY[1], -forcesY[0], -forcesY[3], -forcesY[2]
+            }
+        );
+    }
+
     // -----------------
     // COMMAND LIFECYCLE
     // -----------------
@@ -102,6 +131,10 @@ public class FollowPath extends Command {
         // The trajectory is indexed by time-since-start; the timer is that clock.
         timer.reset();
         timer.start();
+
+        this.xController.reset();
+        this.yController.reset();
+        this.headingController.reset();
 
         // disable vision updates while following a path
         this.drivetrain.poseEstimator.setVisionEnabled(false);
@@ -116,7 +149,9 @@ public class FollowPath extends Command {
                 this.isRedAlliance);
 
             if (initialPose.isEmpty()) {
-                // TODO: Why would this ever happen? Should we handle it differently?
+                // Only possible with an empty/corrupted trajectory file;
+                // better to fail loudly at the start of auto than drive from
+                // a wrong origin.
                 throw new IllegalStateException("Trajectory has no initial pose!");
             }
             this.drivetrain.resetPose(
@@ -133,60 +168,42 @@ public class FollowPath extends Command {
         Optional<SwerveSample> swerveSample = this.trajectory.sampleAt(
             t, isRedAlliance);
         if (swerveSample.isEmpty()) {
-            return; // TODO: Why would this ever happen? Should we handle it differently?
-        }
-        SwerveSample sample;
-
-        if (this.isMirrored) {
-            // Reflect the sample across the field's long (X) axis: Y and
-            // heading flip sign, so every Y-component and every angular
-            // quantity (heading, omega, AND alpha) must be negated. The
-            // reflection also turns left-side modules into right-side ones,
-            // so the per-module force arrays swap FL<->FR and BL<->BR
-            // (Choreo module order: FL, FR, BL, BR).
-            SwerveSample original = swerveSample.get();
-            double[] forcesX = original.moduleForcesX();
-            double[] forcesY = original.moduleForcesY();
-            sample = new SwerveSample(
-                original.t,
-                original.x,
-                FieldConstants.WIDTH - original.y,
-                -original.heading,
-                original.vx,
-                -original.vy,
-                -original.omega,
-                original.ax,
-                -original.ay,
-                -original.alpha,
-                new double[] {
-                    forcesX[1], forcesX[0], forcesX[3], forcesX[2]
-                },
-                new double[] {
-                    -forcesY[1], -forcesY[0], -forcesY[3], -forcesY[2]
-                }
-            );
-        } else {
-            sample = swerveSample.get();
+            // Can only happen for an empty trajectory; isFinished() will end
+            // us at totalTime = 0 immediately.
+            return;
         }
 
-        // TODO: This loses the capability of Choreo to control the wheels optimally. See the choreo docs.
+        SwerveSample sample = this.isMirrored
+            ? mirrorSample(swerveSample.get(), CONSTANTS.FieldConstants.WIDTH)
+            : swerveSample.get();
 
-        // See https://docs.wpilib.org/en/stable/docs/software/advanced-controls/trajectories/holonomic.html
+        Pose2d pose = this.drivetrain.getPose();
 
-        ChassisSpeeds sampleSpeeds = sample.getChassisSpeeds();
-
-        double desiredLinearVelocity = Math.sqrt(
-            sampleSpeeds.vxMetersPerSecond * sampleSpeeds.vxMetersPerSecond +
-            sampleSpeeds.vyMetersPerSecond * sampleSpeeds.vyMetersPerSecond);
-
-        ChassisSpeeds commandedSpeeds = this.holonomicController.calculate(
-            this.drivetrain.getPose(),
-            sample.getPose(),
-            desiredLinearVelocity,
-            sample.getPose().getRotation()
+        // Feedforward from the plan + proportional feedback on position
+        // error, all in FIELD-relative terms.
+        ChassisSpeeds fieldRelativeSpeeds = new ChassisSpeeds(
+            sample.vx + this.xController.calculate(pose.getX(), sample.x),
+            sample.vy + this.yController.calculate(pose.getY(), sample.y),
+            sample.omega +
+                this.headingController.calculate(
+                    pose.getRotation().getRadians(),
+                    sample.heading
+                )
         );
 
-        this.drivetrain.setDesiredState(commandedSpeeds);
+        Logger.recordOutput("FollowPath/SamplePose", sample.getPose());
+        Logger.recordOutput("FollowPath/FieldSpeeds", fieldRelativeSpeeds);
+
+        // Convert to the robot frame using our ACTUAL heading. Note: this is
+        // the raw pose rotation, not DrivetrainController's driver-relative
+        // version — paths live in field coordinates, not driver coordinates.
+        ChassisSpeeds robotRelativeSpeeds =
+            ChassisSpeeds.fromFieldRelativeSpeeds(
+                fieldRelativeSpeeds,
+                pose.getRotation()
+            );
+
+        this.drivetrain.setDesiredState(robotRelativeSpeeds);
     }
 
     @Override
@@ -202,7 +219,9 @@ public class FollowPath extends Command {
 
     @Override
     public boolean isFinished() {
-        // TODO: If precition is important we may need an end-state controller.
-        return this.timer.get() >= this.trajectory.getTotalTime(); // TODO: I assume total time is in seconds?
+        // Time-based only: we declare done when the plan's clock runs out,
+        // wherever we are. TODO: add a position tolerance / end-state
+        // controller if precision matters for scoring.
+        return this.timer.get() >= this.trajectory.getTotalTime();
     }
 }
