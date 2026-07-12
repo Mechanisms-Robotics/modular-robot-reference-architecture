@@ -14,6 +14,12 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import frc.robot.CONSTANTS.FieldConstants;
 
+/**
+ * PoseCameraIO for a real PhotonVision camera on a coprocessor. Prefers the
+ * multi-tag PnP solution computed on the coprocessor (most accurate) and
+ * falls back to the lowest-ambiguity single-tag solution when only one tag
+ * is visible.
+ */
 public class PoseCameraIOPhoton implements PoseCameraIO {
     private final PhotonCamera camera;
     private final String cameraName;

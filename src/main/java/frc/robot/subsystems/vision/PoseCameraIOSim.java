@@ -19,6 +19,16 @@ import edu.wpi.first.math.geometry.Transform3d;
 import frc.robot.PoseEstimator8736;
 import frc.robot.CONSTANTS.FieldConstants;
 
+/**
+ * PoseCameraIO for simulation: renders the AprilTag layout through a
+ * PhotonVision camera sim (with realistic noise, FOV, and latency) and runs
+ * the same pose-estimation pipeline as the real camera IO.
+ *
+ * <p>The sim needs to know where the robot "actually" is to know which tags
+ * are visible — that ground truth comes from the odometry-only estimator in
+ * {@link PoseEstimator8736#getSimulatedPose()}, NOT the fused estimate (using
+ * the fused estimate would let vision feed itself its own corrections).
+ */
 public class PoseCameraIOSim implements PoseCameraIO {
     private final VisionSystemSim visionSim;
     private final PhotonCameraSim cameraSim;
@@ -97,6 +107,9 @@ public class PoseCameraIOSim implements PoseCameraIO {
         inputs.timestampSeconds = timestampSecondsArray.stream().mapToDouble(Double::doubleValue).toArray();
         inputs.poseEstimates = poseEstimatesArray.stream().toArray(Pose3d[]::new);
 
+        // Advance the simulated camera to the robot's current ground-truth
+        // pose. Done AFTER reading results, so frames produced here are read
+        // next loop — one loop of extra latency, comparable to a real camera.
         visionSim.update(poseEstimator.getSimulatedPose());
     }
 }
