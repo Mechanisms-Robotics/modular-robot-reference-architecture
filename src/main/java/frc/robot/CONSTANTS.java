@@ -112,6 +112,21 @@ public class CONSTANTS {
         // Reject any vision pose estimate more than this far off the floor —
         // a tag solution that puts the robot half a meter in the air is junk.
         public static final double Z_THRESHOLD = 0.5;
+
+        // Reject estimates that place the robot outside the field by more
+        // than this margin (meters). Small positive margin tolerates bumper
+        // overhang at the walls.
+        public static final double FIELD_BORDER_MARGIN_METERS = 0.25;
+
+        // A single tag seen from far away is geometrically ambiguous; past
+        // this camera-to-tag distance, single-tag estimates are dropped.
+        public static final double MAX_SINGLE_TAG_DISTANCE_METERS = 4.0;
+
+        // Measurement std-dev baselines at 1 m from a single tag. Trust is
+        // scaled by distance^2 / tagCount (AdvantageKit vision template
+        // heuristic; tune on the field). Units: meters, radians.
+        public static final double LINEAR_STD_DEV_BASE = 0.08;
+        public static final double ANGULAR_STD_DEV_BASE = 0.16;
     }
     public static final int GYRO_CAN_ID = 9;
 

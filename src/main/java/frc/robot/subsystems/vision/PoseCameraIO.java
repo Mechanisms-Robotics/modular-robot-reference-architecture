@@ -18,9 +18,13 @@ public interface PoseCameraIO {
         // One entry per NEW pose estimate produced since the last loop
         // (may be empty). Arrays are index-aligned: poseEstimates[k] was
         // captured at timestampSeconds[k] (FPGA epoch), which is what the
-        // pose estimator needs for latency compensation.
+        // pose estimator needs for latency compensation. tagCounts[k] and
+        // avgTagDistancesMeters[k] describe the same estimate so the
+        // subsystem can decide how much to trust it.
         public double[] timestampSeconds = new double[] {};
         public Pose3d[] poseEstimates = new Pose3d[] {};
+        public int[] tagCounts = new int[] {};
+        public double[] avgTagDistancesMeters = new double[] {};
     }
 
     /** Refreshes all fields of {@code inputs} from the camera. */

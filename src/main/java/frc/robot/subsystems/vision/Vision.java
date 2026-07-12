@@ -5,6 +5,7 @@ import org.littletonrobotics.junction.Logger;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.PoseEstimator8736;
+import frc.robot.CONSTANTS.FieldConstants;
 import frc.robot.CONSTANTS.VisionConstants;
 
 /**
@@ -42,25 +43,63 @@ public class Vision extends SubsystemBase {
 
             // Constantly feed vision measurements into the pose estimator
             for (int j = 0; j < inputs[i].timestampSeconds.length; j++) {
-                // Sanity gate: the robot drives on the floor, so a solution
-                // that puts it half a meter above OR below the carpet is a
-                // bad tag solve. The old check only rejected above-floor
-                // poses; Math.abs also catches below-floor ones.
-                double z = inputs[i].poseEstimates[j].getZ();
-                if (Math.abs(z) > VisionConstants.Z_THRESHOLD) {
+                if (!isPlausible(inputs[i], j)) {
                     continue;
                 }
 
-                // Fixed measurement std devs (x meters, y meters, theta rad):
-                // large-ish values = "trust vision loosely", letting odometry
-                // dominate short-term motion while vision slowly corrects
-                // drift. TODO: scale with tag distance/count instead.
+                int tagCount = Math.max(1, inputs[i].tagCounts[j]);
+                double distance = inputs[i].avgTagDistancesMeters[j];
+
+                // Scale trust with solution quality: noise grows roughly
+                // with the square of tag distance and shrinks with more
+                // tags in the solve. Smaller std dev = trust vision more.
+                double scale = (distance * distance) / tagCount;
+                double linearStdDev =
+                    VisionConstants.LINEAR_STD_DEV_BASE * scale;
+                double angularStdDev =
+                    VisionConstants.ANGULAR_STD_DEV_BASE * scale;
+
+                Logger.recordOutput(
+                    "Vision/" + i + "/LinearStdDev", linearStdDev);
+
                 this.poseEstimator.addVisionMeasurement(
                     inputs[i].poseEstimates[j].toPose2d(),
                     inputs[i].timestampSeconds[j],
-                    VecBuilder.fill(0.9, 0.9, 0.9)
+                    VecBuilder.fill(linearStdDev, linearStdDev, angularStdDev)
                 );
             }
         }
+    }
+
+    /**
+     * Physical-plausibility gates applied to every estimate before it can
+     * touch the pose estimator. Rejects:
+     * (a) solutions off the floor plane (|z| beyond threshold),
+     * (b) solutions outside the field boundary (plus a bumper margin),
+     * (c) single-tag solutions from far away (geometrically ambiguous).
+     */
+    private static boolean isPlausible(
+            PoseCameraIOInputsAutoLogged input, int j) {
+        var pose = input.poseEstimates[j];
+
+        if (Math.abs(pose.getZ()) > VisionConstants.Z_THRESHOLD) {
+            return false;
+        }
+
+        double margin = VisionConstants.FIELD_BORDER_MARGIN_METERS;
+        if (pose.getX() < -margin
+            || pose.getX() > FieldConstants.LENGTH + margin
+            || pose.getY() < -margin
+            || pose.getY() > FieldConstants.WIDTH + margin) {
+            return false;
+        }
+
+        if (input.tagCounts[j] <= 1
+            && input.avgTagDistancesMeters[j]
+                > VisionConstants.MAX_SINGLE_TAG_DISTANCE_METERS) {
+            return false;
+        }
+
+        return true;
     }
 }

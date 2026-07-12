@@ -51,9 +51,11 @@ public class PoseCameraIOPhoton implements PoseCameraIO {
 
         List<Double> timestampSecondsArray = new ArrayList<>();
         List<Pose3d> poseEstimatesArray = new ArrayList<>();
+        List<Integer> tagCountsArray = new ArrayList<>();
+        List<Double> avgTagDistancesArray = new ArrayList<>();
 
         for (PhotonPipelineResult result : results) {
-            visionEstimate = this.photonEstimator.estimateCoprocMultiTagPose(result); 
+            visionEstimate = this.photonEstimator.estimateCoprocMultiTagPose(result);
 
             // if there's no multi-tag estimate, fall back to the lowest ambiguity single tag pose
             if (visionEstimate.isEmpty()) {
@@ -68,11 +70,35 @@ public class PoseCameraIOPhoton implements PoseCameraIO {
                 // Push each unread input to the arrays
                 timestampSecondsArray.add(visionEstimate.get().timestampSeconds);
                 poseEstimatesArray.add(poseEstimate);
+                tagCountsArray.add(visionEstimate.get().targetsUsed.size());
+                avgTagDistancesArray.add(
+                    averageTagDistance(visionEstimate.get()));
             }
         }
 
         // Finally, push all estimates to the inputs
         inputs.timestampSeconds = timestampSecondsArray.stream().mapToDouble(Double::doubleValue).toArray();
         inputs.poseEstimates = poseEstimatesArray.stream().toArray(Pose3d[]::new);
+        inputs.tagCounts = tagCountsArray.stream().mapToInt(Integer::intValue).toArray();
+        inputs.avgTagDistancesMeters = avgTagDistancesArray.stream().mapToDouble(Double::doubleValue).toArray();
+    }
+
+    /**
+     * Mean straight-line camera-to-tag distance across the tags used in an
+     * estimate. Farther tags subtend fewer pixels, so their solutions carry
+     * more noise — the Vision subsystem scales its trust accordingly.
+     */
+    static double averageTagDistance(EstimatedRobotPose estimate) {
+        if (estimate.targetsUsed.isEmpty()) {
+            return 0.0;
+        }
+        double total = 0.0;
+        for (var target : estimate.targetsUsed) {
+            total += target
+                .getBestCameraToTarget()
+                .getTranslation()
+                .getNorm();
+        }
+        return total / estimate.targetsUsed.size();
     }
 }
