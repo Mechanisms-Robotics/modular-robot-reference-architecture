@@ -187,17 +187,23 @@ public class Drivetrain extends SubsystemBase {
         }
         if (this.driveClosedLoop) {
 
-            // send the new desired states down to the modules
-
+            // Send the new desired states down to the modules.
+            // discretize() compensates for the fact that we only update
+            // setpoints every 20 ms: holding a constant (vx, vy, omega) for a
+            // whole period makes the robot arc sideways while rotating, so it
+            // reshapes the command such that the robot lands where the
+            // continuous-time command would have. It was previously computed
+            // but not fed into the kinematics, which caused translation drift
+            // whenever the robot spun while driving.
             ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(
                 this.desiredChassisSpeeds,
                 CONSTANTS.ROBOT_LOOP_PERIOD
             );
 
             SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(
-                this.desiredChassisSpeeds
+                discreteSpeeds
             );
-            
+
             SwerveDriveKinematics.desaturateWheelSpeeds(
                 moduleStates,
                 CONSTANTS.DriveConstants.SPEED_AT_12_VOLTS
@@ -234,11 +240,11 @@ public class Drivetrain extends SubsystemBase {
         return this.poseEstimator.getEstimatedPose();
     }
 
-    @Override
-    public void simulationPeriodic() {
-        this.periodic();
-    }
-    
+    // NOTE: deliberately no simulationPeriodic() override. The scheduler
+    // already calls periodic() in simulation; an override that called
+    // periodic() again ran the module physics twice per loop, so the sim
+    // robot moved at 2x speed and odometry was double-fed.
+
     /** Runs the drive in a straight line with the specified drive output. */
     public void runCharacterization(double output) {
         this.driveClosedLoop = false;
