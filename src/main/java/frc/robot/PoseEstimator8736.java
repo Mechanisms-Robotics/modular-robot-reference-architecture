@@ -169,6 +169,16 @@ public class PoseEstimator8736 {
      */
     public void resetPose(Pose2d pose, SwerveModulePosition[] modulePositions) {
         poseEstimator.resetPosition(rawGyroRotation, modulePositions, pose);
+
+        // Keep the sim ground-truth estimator in step. Without this, a pose
+        // reset (start of auto, driver re-zero) moved the "real" estimate but
+        // not the simulated ground truth, so the sim vision system rendered
+        // tags from a stale robot position from then on.
+        simulatedPoseEstimator.resetPosition(
+            rawGyroRotation,
+            modulePositions,
+            pose
+        );
     }
 
     /**

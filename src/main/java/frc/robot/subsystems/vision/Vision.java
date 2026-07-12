@@ -32,10 +32,15 @@ public class Vision extends SubsystemBase {
 
             // Constantly feed vision measurements into the pose estimator
             for (int j = 0; j < inputs[i].timestampSeconds.length; j++) {
-                if (inputs[i].poseEstimates[j].getZ() > VisionConstants.Z_THRESHOLD) {
+                // Sanity gate: the robot drives on the floor, so a solution
+                // that puts it half a meter above OR below the carpet is a
+                // bad tag solve. The old check only rejected above-floor
+                // poses; Math.abs also catches below-floor ones.
+                double z = inputs[i].poseEstimates[j].getZ();
+                if (Math.abs(z) > VisionConstants.Z_THRESHOLD) {
                     continue;
                 }
-                
+
                 this.poseEstimator.addVisionMeasurement(
                     inputs[i].poseEstimates[j].toPose2d(),
                     inputs[i].timestampSeconds[j],

@@ -24,6 +24,7 @@ public class Robot extends LoggedRobot {
   private Command autonomousCommand;
   private final RobotContainer robotContainer;
   private final SendableChooser<Boolean> resetPoseChooser = new SendableChooser<>();
+  private boolean lastResetPoseSelected = false;
 
   public Robot() {
     SignalLogger.enableAutoLogging(false);
@@ -67,9 +68,17 @@ public class Robot extends LoggedRobot {
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
-    if (resetPoseChooser.getSelected()) {
+
+    // Dashboard "Reset Pose" control. Fire ONCE when the selection flips to
+    // "All" — the previous code reset every loop while "All" stayed selected,
+    // which continuously cleared the pose estimator's latency-compensation
+    // buffer and made it silently drop all vision measurements.
+    boolean resetPoseSelected = Boolean.TRUE.equals(
+        resetPoseChooser.getSelected());
+    if (resetPoseSelected && !lastResetPoseSelected) {
       robotContainer.drivetrain.resetPose(robotContainer.drivetrain.getPose());
     }
+    lastResetPoseSelected = resetPoseSelected;
   }
 
   @Override
