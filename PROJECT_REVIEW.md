@@ -173,6 +173,11 @@ ee17a77), and `.gitattributes` line-ending enforcement (7f78688).
 Ordered by priority. Each item is self-contained; an implementer needs only this
 section plus the named files.
 
+> **Implementation status on branch `joel-improvements`:** P0-1 (Choreo follower),
+> P0-2 (DriveForward auto + guarded Choreo registration), P0-3 (CI), P0-4 (nine
+> unit tests), and P1-5 (scaled vision trust + plausibility gates) are DONE on this
+> branch — see its git log. Items P1-6 onward remain open.
+
 ### P0-1. Replace the FollowPath controller with a proper Choreo follower
 - **Problem:** N3 — feedforward direction is wrong for strafe paths.
 - **Change:** In `commands/FollowPath.java`, delete `HolonomicDriveController` and
