@@ -11,9 +11,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.CONSTANTS;
 import frc.robot.CONSTANTS.FieldConstants;
@@ -79,8 +77,9 @@ public class FollowPath extends Command {
     // disable vision updates while following a path
     this.drivetrain.poseEstimator.setVisionEnabled(false);
 
-    this.isRedAlliance = DriverStation.getAlliance().isPresent() &&
-        DriverStation.getAlliance().get() == Alliance.Red;
+    // Sampled once at path start: Choreo mirrors the trajectory for red, and
+    // the alliance cannot change mid-path.
+    this.isRedAlliance = FieldUtil.isRedAlliance();
 
     if (this.resetPose) {
       // rotate the initial pose if we're on the red alliance

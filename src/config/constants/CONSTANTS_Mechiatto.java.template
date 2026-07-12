@@ -1,10 +1,14 @@
 /******************************************************************************
- *                                                                             *
- *                 ** MECCHIATO **                                             *
- *                                                                             *
- *  THIS FILE IS FOR MANAGING THE CONSTANTS FOR THE MECCHIATO BOT.             *
- *                                                                             *
- *                                                                             *
+ *                                                                            *
+ *                 ** MECHIATTO (PRACTICE BOT) **                             *
+ *                                                                            *
+ *  THIS FILE IS FOR MANAGING THE CONSTANTS FOR THE MECHIATTO PRACTICE BOT.  *
+ *                                                                            *
+ *  TODO: This template is currently a byte-for-byte copy of the Rebuilt     *
+ *  competition-bot constants. Measure and fill in the real Mechiatto        *
+ *  values (gear ratios, wheel radius, CAN IDs, encoder offsets) before      *
+ *  using it, and re-enable the prepareConstants copy task in build.gradle.  *
+ *                                                                            *
  ******************************************************************************/
 
 package frc.robot;
@@ -20,12 +24,8 @@ import static edu.wpi.first.units.Units.Volts;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
-import com.ctre.phoenix6.configs.FeedbackConfigs;
-import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
@@ -33,15 +33,11 @@ import com.ctre.phoenix6.swerve.SwerveModuleConstants.ClosedLoopOutputType;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.DriveMotorArrangement;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.SteerFeedbackType;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants.SteerMotorArrangement;
-import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.ClosedLoopSlot;
-import com.revrobotics.spark.config.SparkMaxConfig;
 import com.ctre.phoenix6.swerve.SwerveModuleConstantsFactory;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
@@ -64,9 +60,10 @@ public class CONSTANTS {
         public static final AprilTagFieldLayout APRILTAG_FIELD_LAYOUT =
             AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
-        public static double WIDTH = APRILTAG_FIELD_LAYOUT.getFieldWidth();
-        public static double LENGTH = APRILTAG_FIELD_LAYOUT.getFieldLength();
-        public static Pose2d CENTER = new Pose2d(LENGTH/2.0, WIDTH/2.0, Rotation2d.kZero);
+        public static final double WIDTH = APRILTAG_FIELD_LAYOUT.getFieldWidth();
+        public static final double LENGTH = APRILTAG_FIELD_LAYOUT.getFieldLength();
+        public static final Pose2d CENTER =
+            new Pose2d(LENGTH / 2.0, WIDTH / 2.0, Rotation2d.kZero);
     }
 
     // MARK: Vision
@@ -182,7 +179,6 @@ public class CONSTANTS {
                 new CurrentLimitsConfigs()
                     .withSupplyCurrentLimit(Amps.of(70))
                     .withSupplyCurrentLimitEnable(true)
-                    
             );
         private static final TalonFXConfiguration STEER_INITIAL_CONFIGS =
             new TalonFXConfiguration().withCurrentLimits(
@@ -295,7 +291,7 @@ public class CONSTANTS {
         private static final Angle BACK_LEFT_ENCODER_OFFSET = Rotations.of(
             0
         );
-        private static final boolean BACK_LELFT_STEER_MOTOR_INVERTED = true;
+        private static final boolean BACK_LEFT_STEER_MOTOR_INVERTED = true;
         private static final boolean BACK_LEFT_ENCODER_INVERTED = true;
 
         private static final Distance BACK_LEFT_X_POS = Meters.of(-TRACK_LENGTH_METERS / 2);
@@ -305,7 +301,7 @@ public class CONSTANTS {
         private static final int BACK_RIGHT_DRIVE_MOTOR_ID = 3; // this is swapped with steer on Mechiatto for some reason
         private static final int BACK_RIGHT_STEER_MOTOR_ID = 7;
         private static final int BACK_RIGHT_ENCODER_ID = 3;
-        private static final Angle BACK_RIGHT_ENOCDER_OFFSET = Rotations.of(
+        private static final Angle BACK_RIGHT_ENCODER_OFFSET = Rotations.of(
             0
         );
         private static final boolean BACK_RIGHT_STEER_MOTOR_INVERTED = true;
@@ -356,7 +352,7 @@ public class CONSTANTS {
             BACK_LEFT_X_POS,
             BACK_LEFT_Y_POS,
             INVERT_LEFT_SIDE,
-            BACK_LELFT_STEER_MOTOR_INVERTED,
+            BACK_LEFT_STEER_MOTOR_INVERTED,
             BACK_LEFT_ENCODER_INVERTED
         );
         public static final SwerveModuleConstants<
@@ -367,7 +363,7 @@ public class CONSTANTS {
             BACK_RIGHT_STEER_MOTOR_ID,
             BACK_RIGHT_DRIVE_MOTOR_ID,
             BACK_RIGHT_ENCODER_ID,
-            BACK_RIGHT_ENOCDER_OFFSET,
+            BACK_RIGHT_ENCODER_OFFSET,
             BACK_RIGHT_X_POS,
             BACK_RIGHT_Y_POS,
             INVERT_RIGHT_SIDE,
@@ -428,8 +424,6 @@ public class CONSTANTS {
         public static final double MM_ACCELERATION = MM_CRUISE_VELOCITY / 0.100;
         public static final double MM_EXPO_KV = 0.12 * STEER_GEAR_RATIO;
         public static final double MM_EXPO_KA = 0.1;
-
-        public static final int GYRO_CAN_ID = 9;
 
         public static final double DRIVE_CAN_FRAME_FREQUENCY = 50.0;
         public static final double DRIVE_CAN_FRAME_PERIOD =

@@ -7,13 +7,12 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import frc.robot.CONSTANTS;
 import frc.robot.CONSTANTS.DriveConstants;
 import frc.robot.PoseEstimator8736;
+import frc.robot.util.FieldUtil;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -29,9 +28,9 @@ public class Drivetrain extends SubsystemBase {
     SwerveDriveKinematics kinematics;
     ChassisSpeeds desiredChassisSpeeds;
     
-    // Made this public so the PoseCamera could access it. This could be restructured if needed  -Luke
-    public PoseEstimator8736 poseEstimator;
-    //private final StructArrayPublisher<SwerveModuleState> publisher;
+    // Public so RobotContainer can hand it to the Vision subsystem and
+    // FollowPath can toggle vision fusion. Could grow a getter later.
+    public final PoseEstimator8736 poseEstimator;
 
     private final SwerveModule frontLeftModule;
     private final SwerveModule frontRightModule;
@@ -222,9 +221,7 @@ public class Drivetrain extends SubsystemBase {
     public void resetHeading() {
         resetPose(new Pose2d(
             getPose().getTranslation(),
-            DriverStation.getAlliance().isPresent()
-                && DriverStation.getAlliance().get().equals(Alliance.Red) ?
-                    Rotation2d.k180deg : Rotation2d.kZero
+            FieldUtil.isRedAlliance() ? Rotation2d.k180deg : Rotation2d.kZero
         ));
     }
 
