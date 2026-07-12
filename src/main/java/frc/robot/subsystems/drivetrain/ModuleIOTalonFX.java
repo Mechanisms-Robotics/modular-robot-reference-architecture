@@ -108,17 +108,19 @@ public class ModuleIOTalonFX implements ModuleIO {
         > constants
     ) {
         this.constants = constants;
+        // Phoenix 26 deprecated the (id, String busName) constructors in
+        // favor of passing the CANBus object directly.
         this.driveTalon = new TalonFX(
             constants.DriveMotorId,
-            DriveConstants.DRIVETRAIN_CONSTANTS.CANBusName
+            DriveConstants.CAN_BUS
         );
         this.turnTalon = new TalonFX(
             constants.SteerMotorId,
-            DriveConstants.DRIVETRAIN_CONSTANTS.CANBusName
+            DriveConstants.CAN_BUS
         );
         this.cancoder = new CANcoder(
             constants.EncoderId,
-            DriveConstants.DRIVETRAIN_CONSTANTS.CANBusName
+            DriveConstants.CAN_BUS
         );
 
         // Configure drive motor

@@ -96,7 +96,9 @@ public class Robot extends LoggedRobot {
   @Override
   public void autonomousInit() {
     if (this.autonomousCommand != null) {
-      this.autonomousCommand.schedule();
+      // Command.schedule() is deprecated for removal in 2026; scheduling via
+      // the CommandScheduler is the supported path.
+      CommandScheduler.getInstance().schedule(this.autonomousCommand);
     }
   }
 

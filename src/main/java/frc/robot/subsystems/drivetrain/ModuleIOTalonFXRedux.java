@@ -112,14 +112,18 @@ public class ModuleIOTalonFXRedux implements ModuleIO {
         > constants
     ) {
         this.constants = constants;
+        // Phoenix 26 deprecated the (id, String busName) constructors in
+        // favor of passing the CANBus object directly.
         this.driveTalon = new TalonFX(
             constants.DriveMotorId,
-            DriveConstants.DRIVETRAIN_CONSTANTS.CANBusName
+            DriveConstants.CAN_BUS
         );
         this.turnTalon = new TalonFX(
             constants.SteerMotorId,
-            DriveConstants.DRIVETRAIN_CONSTANTS.CANBusName
+            DriveConstants.CAN_BUS
         );
+        // The Canandmag is a Redux device: it does not take a Phoenix CANBus
+        // and can only live on the RIO bus.
         this.cancoder = new Canandmag(constants.EncoderId);
 
         // Configure drive motor
